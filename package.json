@@ -5,9 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev:ext": "pnpm --filter extension dev",
-    "dev:site": "pnpm --filter server dev && pnpm --filter website dev",
-    "dev:server": "pnpm --filter server dev && pnpm dev:site",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev:site": "pnpm --filter website dev",
+    "dev:server": "pnpm --filter server dev"
   },
   "keywords": [],
   "author": "",

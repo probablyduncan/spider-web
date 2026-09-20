@@ -1,0 +1,35 @@
+:root {
+    font-family: "Times New Roman", Times, serif;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    display: flex;
+    place-items: center start;
+
+    color: #222222;
+    background-color: #fafaff;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+    text-wrap: nowrap;
+}
+
+label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+input {
+    margin-left: 2ch;
+}
+
+button {
+    width: 100%;
+}

@@ -8,6 +8,10 @@
 		"start": "wrangler dev",
 		"cf-typegen": "wrangler types"
 	},
+	"dependencies": {
+		"partyserver": "^0.0.72",
+		"shared": "workspace:*"
+	},
 	"devDependencies": {
 		"@types/node": "^26.6.2",
 		"typescript": "^5.5.2",

@@ -1,0 +1,18 @@
+{
+	"compilerOptions": {
+		/* This package is consumed by browser contexts (extension, website) and by
+		 * a Worker (server) that has no DOM. "DOM" here is only for editing this
+		 * package's own files in isolation - it does NOT propagate to consumers,
+		 * each of which type-checks these sources under its own lib/tsconfig. */
+		"target": "ES2022",
+		"lib": ["ES2022", "DOM", "DOM.Iterable"],
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"strict": true,
+		"noEmit": true,
+		"isolatedModules": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true
+	},
+	"include": ["src"]
+}

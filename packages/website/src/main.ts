@@ -1,9 +1,9 @@
-import type { HeartState, SpiderState } from 'shared';
+import type { HeartState, Point, SpiderState } from 'shared';
 import './style.css'
 import { angleDifference, getPointAroundBox, getPointsAcrossBox, isAlmostZero, midpoint, randomInRange } from '../../shared/src/math';
-import { AnimationController, createWebCanvas, createWebSocket } from 'shared/client';
+import { AnimationController, createWebCanvas, createWebSocket, throttle } from 'shared/client';
 
-const WSS = "https://memphis-comparable-theaters-visit.trycloudflare.com/"//"localhost:8787";
+const WSS = "localhost:8787";
 
 const canvas = document.getElementById("itsy-bitsy-canvas") as HTMLCanvasElement;
 
@@ -220,7 +220,6 @@ function processInput(...touches: { clientX: number, clientY: number }[]) {
     }));
 
     me.targets = points.map(p => transformPointToCanvas(p));
-
     sock.send("move", { points });
 }
 

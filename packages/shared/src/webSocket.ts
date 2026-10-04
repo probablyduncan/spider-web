@@ -55,7 +55,37 @@ export function createWebSocket(host: string) {
 
     return {
         listen,
-        send,
+        send: throttle(send, 250),
         close: () => ws.close()
     }
+}
+
+export function throttle<TParams extends any[]>(
+    callback: (...args: TParams) => any,
+    cooldown: number,
+): (...args: TParams) => void {
+    let waiting = false;
+    return function (...args: TParams) {
+        if (!waiting) {
+            waiting = true;
+            callback.apply(null, args);
+            setTimeout(() => {
+                waiting = false;
+            }, cooldown);
+            console.log("sending!")
+        }
+    }
+}
+
+export function debounce<TParams extends any[]>(
+    callback: (...args: TParams) => any,
+    wait: number,
+): (...args: TParams) => void {
+    let timeoutId: number;
+    return (...args: TParams) => {
+        window.clearTimeout(timeoutId);
+        timeoutId = window.setTimeout(() => {
+            callback.apply(null, args);
+        }, wait);
+    };
 }

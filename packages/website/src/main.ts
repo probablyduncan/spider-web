@@ -72,6 +72,16 @@ document.addEventListener("touchmove", (e) => {
     processInput(...e.touches);
 });
 
+document.addEventListener("touchstart", (e) => {
+    processInput(...e.touches);
+});
+
+document.addEventListener("touchend", (e) => {
+    if (me.targets.length > 1) {
+        me.targets = [me.targets[0]];
+    }
+});
+
 function processInput(...points: { clientX: number, clientY: number }[]) {
     me.targets = points.map(p => transformPointToCanvas({
         x: p.clientX,
@@ -110,8 +120,8 @@ window.addEventListener("keydown", ({ key }) => {
     }
     else if (key === "1") {
         spiders.set("ease", createSpiderState({
-            current: transformPointToCanvas({ x: 0, y: 0}),
-            targets: [transformPointToCanvas({ x: 1, y: 1})],
+            current: transformPointToCanvas({ x: 0, y: 0 }),
+            targets: [transformPointToCanvas({ x: 1, y: 1 })],
         }));
         setTimeout(() => {
             spiders.delete("ease");
@@ -119,8 +129,8 @@ window.addEventListener("keydown", ({ key }) => {
     }
     else if (key === "2") {
         spiders.set("linear", createSpiderState({
-            current: transformPointToCanvas({ x: 0, y: 0}),
-            targets: [transformPointToCanvas({ x: 1, y: 1})],
+            current: transformPointToCanvas({ x: 0, y: 0 }),
+            targets: [transformPointToCanvas({ x: 1, y: 1 })],
             interpolation: {
                 type: "linear",
                 speed: 10,

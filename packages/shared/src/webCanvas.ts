@@ -44,24 +44,46 @@ export default function createWebCanvas(canvas: HTMLCanvasElement) {
     window.addEventListener("resize", scaleCanvasToWindow);
     scaleCanvasToWindow();
 
-    function getAverage(points: Point[]) {
+    function getTarget(targets: Point[]): {
+        /** center of targets */
+        target: Point;
+        /** between 0 and 1 */
+        spread: number
+    } {
 
         const result = {
-            x: 0,
-            y: 0,
-        }
+            target: {
+                x: 0,
+                y: 0,
+            },
+            spread: 0,
+        };
 
-        if (!points.length) {
+        if (!targets.length) {
             return result;
         }
 
-        points.forEach(({ x, y }) => {
-            result.x += x;
-            result.y += y;
+        const min = { x: Infinity, y: Infinity };
+        const max = { x: 0, y: 0 };
+
+        targets.forEach(({ x, y }) => {
+            
+            min.x = Math.min(min.x, x);
+            max.x = Math.max(max.x, x);
+            min.y = Math.min(min.y, y);
+            max.y = Math.max(max.y, y);
+
+            result.target.x += x;
+            result.target.y += y;
         });
 
-        result.x /= points.length;
-        result.y /= points.length;
+        if (targets.length > 1) {
+            result.spread = Math.max(Math.min(((max.x - min.x) + (max.y - min.y)) / 2 - 100, 100), 0) / 100;
+        }
+
+
+        result.target.x /= targets.length;
+        result.target.y /= targets.length;
 
         return result;
     }
@@ -160,7 +182,7 @@ export default function createWebCanvas(canvas: HTMLCanvasElement) {
             });
         }
 
-        const target = getAverage(spider.targets);
+        const { target, spread } = getTarget(spider.targets);
         spider.current ??= target;
         const center = spider.current;
 
@@ -194,7 +216,8 @@ export default function createWebCanvas(canvas: HTMLCanvasElement) {
         // walk legs
         for (let i = 0; i < idealFeet.length * 2; i++) {
 
-            const baseLegLength = 30;
+            // lol
+            const baseLegLength = 30 + spread * 100;
 
             const footConfig = idealFeet[Math.floor(i / 2)];
             const side = (i % 2 === 0) ? 1 : -1;
@@ -222,7 +245,7 @@ export default function createWebCanvas(canvas: HTMLCanvasElement) {
         // ------------------- DRAW --------------------
 
         spider.feet.forEach(f => {
-            drawLine(center, f, "black", 1);
+            drawLine(center, f, "black", 1 + spread);
         })
 
         // body
@@ -230,21 +253,21 @@ export default function createWebCanvas(canvas: HTMLCanvasElement) {
 
         // head
         const headPos = getPointAt(center, 5, angle);
-        drawCircle(headPos, 3, "black");
+        drawCircle(headPos, 3 + 6 * spread, "black");
 
         // thorax
         const thoraxPos = getPointAt(center, -6, angle);
-        drawCircle(thoraxPos, 6, "black");
+        drawCircle(thoraxPos, 6 + 6 * spread, "black");
         context.fill();
 
         // eyes
         const eyeAngle = 0.42;  // 25 deg ish
-        const leftEyePos = getPointAt(center, 5, angle - eyeAngle);
-        const rightEyePos = getPointAt(center, 5, angle + eyeAngle);
+        const leftEyePos = getPointAt(center, 5 + 5 * spread, angle - eyeAngle);
+        const rightEyePos = getPointAt(center, 5 + 5 * spread, angle + eyeAngle);
 
         // whites, with black outlines
-        drawCircle(leftEyePos, 2, "white", { color: "black", width: 1 });
-        drawCircle(rightEyePos, 2, "white", { color: "black", width: 1 });
+        drawCircle(leftEyePos, 2 + 2 * spread, "white", { color: "black", width: 1 });
+        drawCircle(rightEyePos, 2 + 2 * spread, "white", { color: "black", width: 1 });
 
         // pupils
         drawCircle(leftEyePos, 1, "black");

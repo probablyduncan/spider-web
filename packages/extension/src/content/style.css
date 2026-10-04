@@ -1,0 +1,14 @@
+canvas#itsy-bitsy-canvas {
+    position: fixed;
+    inset: 0;
+    z-index: 1000000;
+
+    pointer-events: none;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    
+    image-rendering: pixelated;
+}

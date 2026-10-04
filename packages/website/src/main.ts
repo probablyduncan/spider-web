@@ -1,85 +1,103 @@
-import { AnimationFrameController, SpiderController } from 'shared/render'
+import type { Point, SpiderState } from 'shared';
+import createWebCanvas from '../../shared/src/webCanvas';
+import createWebSocket from '../../shared/src/webSocket';
+import createWebStepper from '../../shared/src/webStepper';
 import './style.css'
-import { createSpiderSocket } from 'shared'
 
-let guid = localStorage.getItem('guid')
-if (!guid) {
-    guid = crypto.randomUUID()
-    localStorage.setItem('guid', guid)
-}
+const WSS = "localhost:8787";
 
-// TODO: point this at the deployed Worker once it exists (e.g. server.<account>.workers.dev)
-const SERVER_HOST = import.meta.env.DEV ? 'localhost:8787' : 'server.<account>.workers.dev'
+const canvas = document.getElementById("itsy-bitsy-canvas") as HTMLCanvasElement;
 
-const socket = createSpiderSocket({ host: SERVER_HOST, guid });
+const draw = createWebCanvas(canvas);
+const step = createWebStepper();
+const sock = createWebSocket(WSS);
 
-const canvas = document.querySelector<HTMLCanvasElement>("canvas#canvas")!;
-const context = canvas.getContext("2d")!;
+// NOT NEEDED YET
+sock.send("init", {});
 
-function scaleCanvasToWindow() {
-    const dpr = window.devicePixelRatio || 1;
-    canvas.style.width = window.innerWidth + "px";
-    canvas.style.height = window.innerHeight + "px";
-    canvas.width = window.innerWidth * dpr;
-    canvas.height = window.innerHeight * dpr;
-    context.setTransform(1, 0, 0, 1, 0, 0);
-    context.scale(dpr, dpr);
-}
+const spiders: Map<string, SpiderState> = new Map();
+const me: SpiderState = createSpiderState();
 
-function clearCanvas() {
-    context.clearRect(0, 0, canvas.width, canvas.height);
-}
-
-scaleCanvasToWindow();
-window.addEventListener("resize", scaleCanvasToWindow);
-
-const otherSpiders: Record<string, SpiderController> = {};
-
-function createSpiderController() {
-    const controller = new SpiderController();
-    controller.target[0] = controller.current[0] = Math.random() > 0.5 ? -40 : window.innerWidth + 40;
-    controller.target[1] = controller.current[1] = Math.random() > 0.5 ? -40 : window.innerHeight + 40;
-    return controller;
-}
-
-const mySpider = createSpiderController();
-
-socket.listen("init", ({ spiders }) => {
-    spiders.forEach((guid) => {
-        otherSpiders[guid] = createSpiderController();
-    });
-});
-
-socket.listen("join", ({ guid }) => {
-    otherSpiders[guid] = createSpiderController();
-});
-
-new AnimationFrameController((deltaMS) => {
-    clearCanvas();
-
-    Object.values(otherSpiders).forEach(s => {
-        s.step(deltaMS);
-        s.draw(context);
-    });
-
-    mySpider.step(deltaMS);
-    mySpider.draw(context);
-
-    return true;
-}).playIfPaused();
-
-document.addEventListener('mousemove', (e) => {
-    mySpider.target[0] = e.clientX;
-    mySpider.target[1] = e.clientY;
-    socket.send("spider", { x: e.clientX / window.innerWidth, y: e.clientY / window.innerWidth });
-});
-
-socket.listen("spider", ({ guid, x, y }) => {
-    const controller = otherSpiders[guid];
-    if (!controller) {
+let prev: number;
+requestAnimationFrame(function update(timestamp: number) {
+    if (!prev) {
+        prev = timestamp;
+        requestAnimationFrame(update);
         return;
     }
 
-    controller.target[0] = x * window.innerWidth;
-    controller.target[1] = y * window.innerHeight;
+    const delta = timestamp - prev;
+    prev = timestamp;
+
+    const spidersToRender = step(delta, [...spiders.values(), me]);
+    draw(spidersToRender);
+    requestAnimationFrame(update);
 });
+
+sock.listen("init", (e) => {
+    e.connections.forEach(c => {
+        spiders.set(c.id, createSpiderState({ targets: c.points }));
+    });
+});
+
+sock.listen("join", (e) => {
+    spiders.set(e.id, createSpiderState())
+});
+
+sock.listen("move", (e) => {
+    const state = spiders.get(e.id);
+    if (!state) {
+        return;
+    }
+    state.targets = e.points.map(toPixels);
+});
+
+sock.listen("leave", (e) => {
+    spiders.delete(e.id);
+});
+
+// sock.listen("message", (e) => {
+//
+// });
+
+document.addEventListener('mousemove', (e) => {
+    processInput(e);
+});
+
+document.addEventListener("touchmove", (e) => {
+    processInput(...e.touches);
+});
+
+function processInput(...points: { clientX: number, clientY: number }[]) {
+    me.targets = points.map(mouseEventToPoint);
+    sock.send("move", { points: me.targets.map(toLerp) });
+}
+
+function createSpiderState(state: Partial<SpiderState> = {}) {
+    const defaultState: SpiderState = {
+        targets: [],
+        targetPadding: 20,
+        feet: [],
+        interpolation: {
+            type: "ease",
+            halfLife: 100,
+        },
+    }
+    return Object.assign(defaultState, state);
+}
+
+function mouseEventToPoint(e: { clientX: number, clientY: number }) {
+    return { x: e.clientX, y: e.clientY };
+}
+
+function mouseEventToLerp(e: { clientX: number, clientY: number }) {
+    return { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight };
+}
+
+function toPixels(point: Point) {
+    return { x: point.x * window.innerWidth, y: point.y * window.innerHeight };
+}
+
+function toLerp(point: Point) {
+    return { x: point.x / window.innerWidth, y: point.y / window.innerHeight };
+}

@@ -1,17 +1,20 @@
-type Vec2 = [number, number];
+type Point = {
+    x: number;
+    y: number;
+}
 
 type PointTransform = {
     angle: number;
     length: number;
-}
+};
 
 export class SpiderController {
-    readonly target: Vec2 = [0, 0];
-    readonly current: Vec2 = [0, 0];
+    readonly target: Point = { x: 0, y: 0 };
+    readonly current: Point = { x: 0, y: 0 };
     angle: number = 0;
 
     private readonly _legs: PointTransform[];
-    readonly feet: Vec2[] = [];
+    readonly feet: Point[] = [];
 
     private readonly _color: string;
 
@@ -30,20 +33,20 @@ export class SpiderController {
     step(deltaMS: DOMHighResTimeStamp) {
 
         // distance between current and target
-        const distance = [
-            this.target[0] - this.current[0],
-            this.target[1] - this.current[1],
-        ]
+        const distance = {
+            x: this.target.x - this.current.x,
+            y: this.target.y - this.current.y,
+        }
 
-        const isAtRest = Math.abs(distance[0]) < 0.5 && Math.abs(distance[1]) < 0.5;
+        const isAtRest = Math.abs(distance.x) < 0.5 && Math.abs(distance.y) < 0.5;
 
         // face target
-        this.angle = Math.atan2(-distance[1], distance[0]);
+        this.angle = Math.atan2(-distance.y, distance.x);
 
         // lerp towards target
         const lerp = Math.min(1, deltaMS * 0.0030625);
-        this.current[0] = lerp * distance[0] + this.current[0];
-        this.current[1] = lerp * distance[1] + this.current[1];
+        this.current.x = lerp * distance.x + this.current.x;
+        this.current.y = lerp * distance.y + this.current.y;
 
         // walk legs
         for (let i = 0; i < this._legs.length; i++) {
@@ -57,13 +60,13 @@ export class SpiderController {
                 continue;
             }
 
-            const currentLegVector: Vec2 = [
-                this.feet[i][0] - this.current[0],
-                this.feet[i][1] - this.current[1],
-            ];
+            const currentLegVector: Point = {
+                x: this.feet[i].x - this.current.x,
+                y: this.feet[i].y - this.current.y,
+            };
 
             // get length, but avoid sqrt unless we're stepping, I guess
-            const legLengthSquared = Math.pow(currentLegVector[0], 2) + Math.pow(currentLegVector[1], 2);
+            const legLengthSquared = Math.pow(currentLegVector.x, 2) + Math.pow(currentLegVector.y, 2);
 
             // if leg is double ideal length, need to step
             if (legLengthSquared > Math.pow(ideal.length * 1.5, 2)) {
@@ -77,15 +80,15 @@ export class SpiderController {
     }
 
     isAtRest() {
-        return Math.abs(this.current[0] - this.target[0]) < 0.5 && Math.abs(this.current[1] - this.target[1]) < 0.5;
+        return Math.abs(this.current.x - this.target.x) < 0.5 && Math.abs(this.current.y - this.target.y) < 0.5;
     }
 }
 
-function drawSpider(context: CanvasRenderingContext2D, pos: Vec2, angle: number, feet: Vec2[], color: string = "black") {
+function drawSpider(context: CanvasRenderingContext2D, pos: Point, angle: number, feet: Point[], color: string = "black") {
 
     // legs
     for (let foot of feet) {
-        const legAngle = Math.atan2(pos[1] - foot[1], foot[0] - pos[0]);
+        const legAngle = Math.atan2(pos.y - foot.y, foot.x - pos.x);
         const hip = getPointAt(pos, 3, legAngle)
         drawLine(context, hip, foot, color);
     }
@@ -116,10 +119,10 @@ function drawSpider(context: CanvasRenderingContext2D, pos: Vec2, angle: number,
     drawCircle(context, rightEyePos, 1, color);
 }
 
-function drawCircle(context: CanvasRenderingContext2D, center: Vec2, radius: number, fillColor?: string, strokeColor?: string) {
+function drawCircle(context: CanvasRenderingContext2D, center: Point, radius: number, fillColor?: string, strokeColor?: string) {
 
     context.beginPath();
-    context.arc(...center, radius, 0, 2 * Math.PI);
+    context.arc(center.x, center.y, radius, 0, 2 * Math.PI);
 
     if (fillColor) {
         context.fillStyle = fillColor;
@@ -134,25 +137,25 @@ function drawCircle(context: CanvasRenderingContext2D, center: Vec2, radius: num
     context.closePath();
 }
 
-function drawLine(context: CanvasRenderingContext2D, from: Vec2, to: Vec2 | PointTransform, color: string) {
+function drawLine(context: CanvasRenderingContext2D, from: Point, to: Point | PointTransform, color: string) {
 
-    if (!Array.isArray(to)) {
+    if ("length" in to) {
         to = getPointAt(from, to.length, to.angle);
     }
 
     context.strokeStyle = color;
     context.beginPath();
-    context.moveTo(...from);
-    context.lineTo(...to);
+    context.moveTo(from.x, from.y);
+    context.lineTo(to.x, to.y);
     context.stroke();
     context.closePath();
 }
 
-function getPointAt(start: Vec2, length: number, angle: number): Vec2 {
-    return [
-        start[0] + Math.cos(angle) * length,
-        start[1] - Math.sin(angle) * length,
-    ]
+function getPointAt(start: Point, length: number, angle: number): Point {
+    return {
+        x: start.x + Math.cos(angle) * length,
+        y: start.y - Math.sin(angle) * length,
+    }
 }
 
 function toRads(degrees: number) {

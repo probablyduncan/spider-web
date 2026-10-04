@@ -47,3 +47,18 @@ the idea is to make the internet feel inhabited
 and also to show how worldwide is this web
 
 
+
+
+
+
+
+
+
+
+
+spider thoughts
+so the spider itself should be the center of touches
+{
+    center: Point = [0, 0];
+    touches: Point[] = [];
+}

@@ -1,88 +1,78 @@
-import { Server, type Connection, type WSMessage } from "partyserver";
-import type { ClientToServer_SpiderMessages, SpiderGuid } from "shared";
-
-type SpiderConnectionState = {
-    guid: SpiderGuid;
-};
+import { ConnectionContext, Server, type Connection, type WSMessage } from "partyserver";
+import type { ClientToServer_SpiderMessages, ConnectionId, ConnectionInfo, ServerToClient_SpiderMessageKeys, ServerToClient_SpiderMessages } from "shared";
 
 export class Spiders extends Server<Env> {
     readonly options = { hibernate: true };
 
-    _spider_cache = new Map<SpiderGuid, { x: number; y: number }>();
+    _current_connections = new Map<ConnectionId, ConnectionInfo>();
 
-    onMessage(connection: Connection<SpiderConnectionState>, message: WSMessage): void | Promise<void> {
+    private _buildMessageString<K extends ServerToClient_SpiderMessageKeys>(
+        type: K,
+        data: Omit<Extract<ServerToClient_SpiderMessages, { type: K }>, "type">,
+    ) {
+        return JSON.stringify({
+            type,
+            ...data
+        } as Extract<ServerToClient_SpiderMessages, { type: K }>);
+    }
+
+    onMessage(connection: Connection, message: WSMessage): void | Promise<void> {
         if (typeof message !== "string") return;
 
         const data = JSON.parse(message) as ClientToServer_SpiderMessages;
 
         switch (data.type) {
-            case "init":
-                connection.setState({ guid: data.guid });
+            case "init": {
 
-                connection.send(
-                    JSON.stringify({
-                        type: "init",
-                        spiders: [...this._spider_cache.keys()],
-                    }),
-                );
+                this.broadcast(this._buildMessageString("join", {
+                    id: connection.id,
+                }), [connection.id]);
 
-                this.broadcast(
-                    JSON.stringify({
-                        type: "join",
-                        guid: data.guid,
-                    }),
-                    [connection.id],
-                );
+                connection.send(this._buildMessageString("init", {
+                    connections: [...this._current_connections.values()],
+                }));
+
+                this._current_connections.set(connection.id, {
+                    id: connection.id,
+                    points: [],
+                });
 
                 break;
+            }
+            case "move": {
 
-            case "spider": {
-                const guid = connection.state?.guid;
-                if (!guid) break;
-
-                this._spider_cache.set(guid, { x: data.x, y: data.y });
-
-                this.broadcast(
-                    JSON.stringify({
-                        type: "spider",
-                        guid,
-                        x: data.x,
-                        y: data.y,
-                    }),
-                    [connection.id],
-                );
+                // set points cache and broadcast new points to other connections
+                if (this._current_connections.has(connection.id)) {
+                    this._current_connections.get(connection.id)!.points = data.points;
+                }
+                this.broadcast(this._buildMessageString("move", {
+                    id: connection.id,
+                    points: data.points,
+                }), [connection.id]);
 
                 break;
             }
 
             case "message": {
-                const guid = connection.state?.guid;
-                if (!guid) break;
 
-                this.broadcast(
-                    JSON.stringify({
-                        type: "message",
-                        guid,
-                        text: data.text,
-                    }),
-                    [connection.id],
-                );
+                // broadcast message to other clients
+                this.broadcast(this._buildMessageString("message", {
+                    id: connection.id,
+                    message: data.message,
+                }), [connection.id]);
 
                 break;
             }
         }
     }
 
-    onClose(connection: Connection<SpiderConnectionState>): void | Promise<void> {
-        const guid = connection.state?.guid;
-        if (!guid) return;
-
-        this._spider_cache.delete(guid);
-        this.broadcast(
-            JSON.stringify({
-                type: "leave",
-                guid,
-            }),
-        );
+    onClose(connection: Connection): void | Promise<void> {
+        // remove from cache and broadcast leave
+        this._current_connections.delete(connection.id);
+        this.broadcast(this._buildMessageString("leave", { id: connection.id }));
     }
+
+    // onError(connection: Connection, error: unknown): void | Promise<void> {
+
+    // }
 }

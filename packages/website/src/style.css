@@ -23,6 +23,8 @@ body {
 canvas#itsy-bitsy-canvas {
     position: fixed;
     inset: 0;
+    width: 100vw;
+    height: 100svh;
     z-index: 1000000;
 
     pointer-events: none;

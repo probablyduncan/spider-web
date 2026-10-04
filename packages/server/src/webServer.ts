@@ -45,6 +45,15 @@ export class Spiders extends Server<Env> {
                 if (this._current_connections.has(connection.id)) {
                     this._current_connections.get(connection.id)!.points = data.points;
                 }
+                // else {
+                //     this.broadcast(this._buildMessageString("join", {
+                //         id: connection.id,
+                //     }), [connection.id]);
+                //     this._current_connections.set(connection.id, {
+                //         id: connection.id, points: data.points
+                //     });
+                // }
+
                 this.broadcast(this._buildMessageString("move", {
                     id: connection.id,
                     points: data.points,
@@ -73,6 +82,8 @@ export class Spiders extends Server<Env> {
     }
 
     // onError(connection: Connection, error: unknown): void | Promise<void> {
-
+    //     // remove from cache?
+    //     this._current_connections.delete(connection.id);
+    //     this.broadcast(this._buildMessageString("leave", { id: connection.id }));
     // }
 }

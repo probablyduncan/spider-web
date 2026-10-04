@@ -49,7 +49,7 @@ sock.listen("move", (e) => {
     if (!state) {
         return;
     }
-    state.targets = e.points.map(toPixels);
+    state.targets = e.points;
 });
 
 sock.listen("leave", (e) => {
@@ -69,14 +69,14 @@ document.addEventListener("touchmove", (e) => {
 });
 
 function processInput(...points: { clientX: number, clientY: number }[]) {
-    me.targets = points.map(mouseEventToPoint);
-    sock.send("move", { points: me.targets.map(toLerp) });
+    me.targets = points.map(mouseEventToLerp);
+    sock.send("move", { points: me.targets });
 }
 
 function createSpiderState(state: Partial<SpiderState> = {}) {
     const defaultState: SpiderState = {
         targets: [],
-        targetPadding: 20,
+        targetPadding: 0,
         feet: [],
         interpolation: {
             type: "ease",
@@ -91,13 +91,13 @@ function mouseEventToPoint(e: { clientX: number, clientY: number }) {
 }
 
 function mouseEventToLerp(e: { clientX: number, clientY: number }) {
-    return { x: e.clientX / window.innerWidth, y: e.clientY / window.innerHeight };
+    return { x: e.clientX / canvas.clientWidth, y: e.clientY / canvas.clientHeight };
 }
 
 function toPixels(point: Point) {
-    return { x: point.x * window.innerWidth, y: point.y * window.innerHeight };
+    return { x: point.x * canvas.clientWidth, y: point.y * canvas.clientHeight };
 }
 
 function toLerp(point: Point) {
-    return { x: point.x / window.innerWidth, y: point.y / window.innerHeight };
+    return { x: point.x / canvas.clientWidth, y: point.y / canvas.clientHeight };
 }

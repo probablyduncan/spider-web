@@ -1,8 +1,10 @@
 import { Point, RenderableSpider } from "./types";
 
-// this is where we handle the canvas
-// canvas should be scaled, 
-// it should expose a render function, which 
+// ok two things:
+// - combine this with the stepper, I think?
+//   this will make handling canvas size/pixels much easier
+// - legs! just a basic implementation, nothing too crazy is necessary
+// - maybe I should add spider size, that would make legs doable without using px I think
 
 export default function createWebCanvas(canvas: HTMLCanvasElement) {
     const context = canvas?.getContext("2d") as CanvasRenderingContext2D;
@@ -11,12 +13,17 @@ export default function createWebCanvas(canvas: HTMLCanvasElement) {
         throw "uh oh! canvas problems!"
     }
 
+    const canvasSize: Point = {
+        x: canvas.clientWidth,
+        y: canvas.clientHeight,
+    }
+
     function scaleCanvasToWindow() {
-        const dpr = window.devicePixelRatio || 1;
-        canvas.style.width = window.innerWidth + "px";
-        canvas.style.height = window.innerHeight + "px";
-        canvas.width = window.innerWidth * dpr;
-        canvas.height = window.innerHeight * dpr;
+        const dpr = (window.devicePixelRatio || 1) / 4;
+        canvasSize.x = canvas.clientWidth;
+        canvasSize.y = canvas.clientHeight;
+        canvas.width = canvasSize.x * dpr;
+        canvas.height = canvasSize.y * dpr;
         context.setTransform(1, 0, 0, 1, 0, 0);
         context.scale(dpr, dpr);
     }
@@ -32,6 +39,13 @@ export default function createWebCanvas(canvas: HTMLCanvasElement) {
         context.lineTo(to.x, to.y);
         context.stroke();
         context.closePath();
+    }
+
+    function lerpPointToCanvasPoint(point: Point) {
+        return {
+            x: point.x * canvasSize.x,
+            y: point.y * canvasSize.y,
+        }
     }
 
     function getPointAt(start: Point, length: number, angle: number): Point {
@@ -61,28 +75,33 @@ export default function createWebCanvas(canvas: HTMLCanvasElement) {
 
     function drawSpider(spider: RenderableSpider) {
 
+        const center = lerpPointToCanvasPoint(spider.center);
+
         // draw legs!!!
         for (const leg of spider.legs) {
-            drawLine(leg.hip, leg.knee, "black", 4);
-            drawLine(leg.knee, leg.foot, "black", 2);
+            const hip = lerpPointToCanvasPoint(leg.hip);
+            const knee = lerpPointToCanvasPoint(leg.knee);
+            const foot = lerpPointToCanvasPoint(leg.foot)
+            drawLine(hip, knee, "black", 4);
+            drawLine(knee, foot, "black", 2);
         }
 
         // body
-        drawCircle(spider.center, 3, "black");
+        drawCircle(center, 3, "black");
 
         // head
-        const headPos = getPointAt(spider.center, 5, spider.angle);
+        const headPos = getPointAt(center, 5, spider.angle);
         drawCircle(headPos, 3, "black");
 
         // thorax
-        const thoraxPos = getPointAt(spider.center, -6, spider.angle);
+        const thoraxPos = getPointAt(center, -6, spider.angle);
         drawCircle(thoraxPos, 6, "black");
         context.fill();
 
         // eyes
         const eyeAngle = 0.42;  // 25 deg ish
-        const leftEyePos = getPointAt(spider.center, 5, spider.angle - eyeAngle);
-        const rightEyePos = getPointAt(spider.center, 5, spider.angle + eyeAngle);
+        const leftEyePos = getPointAt(center, 5, spider.angle - eyeAngle);
+        const rightEyePos = getPointAt(center, 5, spider.angle + eyeAngle);
 
         // whites, with black outlines
         drawCircle(leftEyePos, 2, "white", "black");
@@ -94,7 +113,10 @@ export default function createWebCanvas(canvas: HTMLCanvasElement) {
     }
 
     function draw(spiders: RenderableSpider[]) {
-        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.clearRect(0, 0, canvasSize.x, canvasSize.y);
+        // drawCircle(lerpPointToCanvasPoint({ x: 0.5, y: 0.5 }), 20, "green");
+        // drawCircle(lerpPointToCanvasPoint({ x: 0, y: 0 }), 20, "blue");
+        // drawCircle(lerpPointToCanvasPoint({ x: 1, y: 1 }), 20, "red");
         spiders.forEach(drawSpider);
     }
 

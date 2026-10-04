@@ -4,9 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev:ext": "pnpm --filter extension dev",
-    "dev:site": "pnpm --filter website dev",
-    "dev:server": "pnpm --filter server dev"
+    "local:ext": "pnpm --filter extension dev",
+    "local:site": "pnpm --filter website dev",
+    "local:server": "pnpm --filter server dev",
+    "network:site": "pnpm --filter website dev --host",
+    "network:server": "pnpm --filter server dev --ip 0.0.0.0"
   },
   "keywords": [],
   "author": "",

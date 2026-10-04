@@ -9,7 +9,10 @@ type Readonly<T> =
     T;
 
 
-/** this is persisted across frames */
+/**
+ * this is persisted across frames
+ * all points are [0, 1]
+ */
 export type SpiderState = {
     targets: Point[];
     /** if undefined, spider will render on target */
@@ -33,6 +36,7 @@ export type SpiderState = {
 /**
  * this is created each frame
  * and passed into the renderer
+ * all points are [0, 1]
  * */
 export type RenderableSpider = Readonly<{
     center: Point;

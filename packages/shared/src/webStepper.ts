@@ -19,6 +19,7 @@ export default function createWebStepper() {
         // update current position
         switch (spider.interpolation.type) {
             case "linear":
+                // can I make this a little more natural?
                 const distanceToTravel = {
                     x: Math.cos(angle) * spider.interpolation.speed,
                     y: Math.sin(angle) * spider.interpolation.speed,
@@ -56,7 +57,11 @@ export default function createWebStepper() {
 function getAverage(points: Point[]) {
 
     if (!points.length) {
-        points.push(getPointOffScreen());
+        // points.push(getPointOffScreen());
+        points.push({
+            x: 0,
+            y: 0,
+        })
     }
 
     const result = {
@@ -76,9 +81,9 @@ function getAverage(points: Point[]) {
 }
 
 function getPointOffScreen(): Point {
-    const distanceOffscreen = 100;
+    const distanceOffscreen = 0.1;
     const axis = Math.floor(Math.random() + 0.5);
-    const screen = [window.innerWidth, window.innerHeight];
+    const screen = [1, 1];
     const pos = [
         Math.random() * screen[axis],
         Math.random() > 0.5 ? -distanceOffscreen : (distanceOffscreen + screen[1 - axis]),

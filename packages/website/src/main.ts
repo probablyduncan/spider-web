@@ -1,13 +1,13 @@
-import type { HeartState, Point, SpiderState } from 'shared';
+import type { HeartState, SpiderState } from 'shared';
 import './style.css'
 import { angleDifference, getPointAroundBox, getPointsAcrossBox, isAlmostZero, midpoint, randomInRange } from '../../shared/src/math';
-import { AnimationController, createWebCanvas, createWebSocket, throttle } from 'shared/client';
+import { AnimationController, createWebCanvas, createWebSocket } from 'shared/client';
 
-const WSS = "localhost:8787";
 
 const canvas = document.getElementById("itsy-bitsy-canvas") as HTMLCanvasElement;
-
 const { stepAndDrawSpider, stepAndDrawHeart, clearCanvas, setPixelScale, transformPointToCanvas, getCanvasSize } = createWebCanvas(canvas);
+
+const WSS = import.meta.env.VITE_WS_HOST as string;
 const sock = createWebSocket(WSS);
 
 // NOT NEEDED YET

@@ -1,0 +1,232 @@
+# Deploys spider-web.
+#
+#   push to main      -> server (Cloudflare) and site (GitHub Pages), each only if its files changed
+#   tag ext-vX.Y.Z    -> GitHub Release with the extension zip (+ optional Chrome Web Store upload)
+#   pull request      -> build checks only, nothing is deployed
+#   manual dispatch   -> deploys both server and site regardless of what changed (use after changing
+#                        the WS_HOST variable, since that is baked into the site at build time)
+#
+# One-time setup (Settings -> Secrets and variables -> Actions):
+#   secrets:   CLOUDFLARE_API_TOKEN   (token template "Edit Cloudflare Workers")
+#              CLOUDFLARE_ACCOUNT_ID
+#   variables: WS_HOST                (server host only, no scheme/path, e.g. server.your-subdomain.workers.dev)
+#   Settings -> Pages -> Source: "GitHub Actions"; custom domain: web.duncanpetrie.com
+#
+# Optional, only once the extension is listed on the Chrome Web Store (see publish-chrome below):
+#   variables: CWS_EXTENSION_ID
+#   secrets:   CWS_CLIENT_ID, CWS_CLIENT_SECRET, CWS_REFRESH_TOKEN
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    tags: ['ext-v*']
+  pull_request:
+  workflow_dispatch:
+
+# PRs cancel superseded runs; main and tag runs are never cancelled mid-deploy.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  # Server host baked into the website at build time (see packages/website/src/main.ts).
+  VITE_WS_HOST: ${{ vars.WS_HOST }}
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Build everything that can be built without credentials. Runs on every event.
+  # ---------------------------------------------------------------------------
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Version comes from "packageManager" in the root package.json.
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Both package build scripts run `tsc` first, so this is also the typecheck.
+      - name: Build website
+        run: pnpm --filter website build
+
+      - name: Build extension
+        run: pnpm --filter extension build
+
+      # Bundles the worker without uploading anything, so a broken server is caught before main.
+      - name: Bundle server (dry run)
+        run: pnpm --filter server exec wrangler deploy --dry-run --outdir "$RUNNER_TEMP/server-dist"
+
+      # vite-plugin-zip-pack writes packages/extension/release/spider-web.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: extension-chrome
+          path: packages/extension/release/spider-web.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  # ---------------------------------------------------------------------------
+  # Work out which parts of the repo changed (main pushes only).
+  # ---------------------------------------------------------------------------
+  changes:
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    outputs:
+      server: ${{ steps.filter.outputs.server }}
+      site: ${{ steps.filter.outputs.site }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            server:
+              - 'packages/server/**'
+              - 'packages/shared/**'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+            site:
+              - 'packages/website/**'
+              - 'packages/shared/**'
+              - 'pnpm-lock.yaml'
+              - 'pnpm-workspace.yaml'
+
+  # ---------------------------------------------------------------------------
+  # Server -> Cloudflare Workers (Durable Object). Goes first so the site never
+  # ships ahead of the protocol it expects.
+  # ---------------------------------------------------------------------------
+  deploy-server:
+    needs: [check, changes]
+    if: >-
+      ${{ !failure() && !cancelled() && github.ref == 'refs/heads/main'
+      && (github.event_name == 'workflow_dispatch' || needs.changes.outputs.server == 'true') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      # Uses the wrangler version pinned in the lockfile rather than a third-party action.
+      - name: Deploy worker
+        run: pnpm --filter server exec wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  # ---------------------------------------------------------------------------
+  # Website -> GitHub Pages (https://web.duncanpetrie.com)
+  # ---------------------------------------------------------------------------
+  deploy-site:
+    needs: [check, changes, deploy-server]
+    if: >-
+      ${{ !failure() && !cancelled() && github.ref == 'refs/heads/main'
+      && (github.event_name == 'workflow_dispatch' || needs.changes.outputs.site == 'true') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Require server host
+        run: |
+          if [ -z "$VITE_WS_HOST" ]; then
+            echo "::error::Set the WS_HOST repository variable (e.g. server.your-subdomain.workers.dev) and re-run."
+            exit 1
+          fi
+
+      - run: pnpm --filter website build
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: packages/website/dist
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  # ---------------------------------------------------------------------------
+  # Extension -> GitHub Release (tags like ext-v1.2.0 only)
+  # ---------------------------------------------------------------------------
+  release-extension:
+    needs: check
+    if: ${{ startsWith(github.ref, 'refs/tags/ext-v') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: extension-chrome
+          path: artifact
+
+      # The manifest version is read from packages/extension/package.json, and the stores reject
+      # a re-upload of an existing version, so the tag has to agree with it.
+      - name: Check tag matches extension version
+        run: |
+          VERSION=$(node -p "require('./packages/extension/package.json').version")
+          TAG_VERSION="${GITHUB_REF_NAME#ext-v}"
+          if [ "$VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::Tag $GITHUB_REF_NAME does not match packages/extension/package.json version $VERSION. Bump the version, commit, then re-tag."
+            exit 1
+          fi
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+
+      - name: Create release
+        run: |
+          cp artifact/spider-web.zip "spider-web-chrome-$VERSION.zip"
+          gh release create "$GITHUB_REF_NAME" "spider-web-chrome-$VERSION.zip" \
+            --title "Extension $VERSION" --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  # ---------------------------------------------------------------------------
+  # Optional: upload the new version to the Chrome Web Store.
+  # Skipped until the CWS_EXTENSION_ID variable exists. The first submission (store listing,
+  # screenshots, privacy answers, "Unlisted" visibility) has to be done by hand in the dashboard.
+  # Check the flags against the CLI's README when enabling:
+  # https://github.com/fregante/chrome-webstore-upload-cli
+  # ---------------------------------------------------------------------------
+  publish-chrome:
+    needs: release-extension
+    if: ${{ vars.CWS_EXTENSION_ID != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: extension-chrome
+          path: artifact
+      - name: Upload to Chrome Web Store
+        run: >-
+          npx --yes chrome-webstore-upload-cli@3 upload
+          --source artifact/spider-web.zip --auto-publish
+        env:
+          EXTENSION_ID: ${{ vars.CWS_EXTENSION_ID }}
+          CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}

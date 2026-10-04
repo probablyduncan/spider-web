@@ -10,7 +10,7 @@ type Listener<K extends ServerToClient_SpiderMessageKeys> = (
     params: Omit<Extract<ServerToClient_SpiderMessages, { type: K }>, "type">,
 ) => void;
 
-export default function createWebSocket(host: string) {
+export function createWebSocket(host: string) {
 
     const ws = new PartySocket({
         host: host,

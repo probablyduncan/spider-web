@@ -8,7 +8,7 @@
     "site:local": "pnpm --filter website dev",
     "server:local": "pnpm --filter server dev",
     "site:network": "pnpm --filter website dev --host",
-    "server:network": "pnpm --filter server dev --ip 0.0.0.0"
+    "server:network": "pnpm --filter server dev --tunnel"
   },
   "keywords": [],
   "author": "",

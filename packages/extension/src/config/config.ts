@@ -22,3 +22,9 @@ inputs.forEach(input => {
         input.checked = resetSetting(key);
     });
 });
+
+
+
+function toggleForThisWebsite() {
+
+}

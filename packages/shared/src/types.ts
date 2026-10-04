@@ -14,6 +14,8 @@ type Readonly<T> =
  * all points should be sized to the canvas
  */
 export type SpiderState = {
+    /** connection id or "me" or whatever */
+    id: string;
     targets: Point[];
     /** if undefined, spider will render on target */
     current: Point;
@@ -31,6 +33,27 @@ export type SpiderState = {
         /** in pixels per millisecond */
         speed: number;
     };
+
+    // this stuff is used outside of rendering but doesn't need to be set,
+    // will be overwritten every frame
+    angle: number;
+    headPosition: Point;
+
+    /** 1 is standard */
+    scale: number;
+
+    kissing: boolean;
+}
+
+export type HeartState = {
+    key: `${string}+${string}=4ever`;
+    char: string;
+    size: number;
+    center: Point;
+    angle: number;
+    duration: number;
+    delay: number;
+    progress: number;
 }
 
 /**

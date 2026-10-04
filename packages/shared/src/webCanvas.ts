@@ -1,13 +1,7 @@
-import { Point, SpiderState } from "./types";
+import { getPointAt, isAlmostZero, lessExtreme, toRads } from "./math";
+import { HeartState, Point, SpiderState } from "./types";
 
-// ok two things:
-// - combine this with the stepper, I think?
-//   this will make handling canvas size/pixels much easier
-// - legs! just a basic implementation, nothing too crazy is necessary
-// - maybe I should add spider size, that would make legs doable without using px I think
-// - step and draw both need to be in px
-
-export default function createWebCanvas(canvas: HTMLCanvasElement) {
+export function createWebCanvas(canvas: HTMLCanvasElement) {
     const context = canvas?.getContext("2d") as CanvasRenderingContext2D;
 
     if (!canvas || !context) {
@@ -19,7 +13,7 @@ export default function createWebCanvas(canvas: HTMLCanvasElement) {
         y: canvas.clientHeight,
     }
 
-    let pixelScale: number = 1;
+    let pixelScale: number = 3;
     function setPixelScale(scale: number | ((prev: number) => number)) {
         if (typeof scale === "function") {
             pixelScale = scale(pixelScale);
@@ -67,7 +61,7 @@ export default function createWebCanvas(canvas: HTMLCanvasElement) {
         const max = { x: 0, y: 0 };
 
         targets.forEach(({ x, y }) => {
-            
+
             min.x = Math.min(min.x, x);
             max.x = Math.max(max.x, x);
             min.y = Math.min(min.y, y);
@@ -88,33 +82,10 @@ export default function createWebCanvas(canvas: HTMLCanvasElement) {
         return result;
     }
 
-    function moreExtreme(x1: number, x2: number) {
-        return Math.abs(x1) > Math.abs(x2) ? x1 : x2;
-    }
-
-    function lessExtreme(x1: number, x2: number) {
-        return Math.abs(x1) > Math.abs(x2) ? x2 : x1;
-    }
-
-    function isAlmostZero(point: Point, threshold: number) {
-        return Math.abs(point.x) < threshold && Math.abs(point.y) < threshold;
-    }
-
     function transformPointToCanvas(point: Point, currentScale: Point = { x: 1, y: 1 }) {
         return {
             x: canvasSize.x * point.x / currentScale.x,
             y: canvasSize.y * point.y / currentScale.y,
-        }
-    }
-
-    function toRads(degrees: number) {
-        return degrees * Math.PI / 180;
-    }
-
-    function getPointAt(start: Point, length: number, angle: number): Point {
-        return {
-            x: start.x + Math.cos(angle) * length,
-            y: start.y + Math.sin(angle) * length,
         }
     }
 
@@ -173,7 +144,7 @@ export default function createWebCanvas(canvas: HTMLCanvasElement) {
         },
     ] as const;
 
-    function stepAndDrawSpider(deltaMS: number, spider: SpiderState) {
+    function stepAndDrawSpider(deltaMS: number, timestamp: number, spider: SpiderState) {
 
         if (!spider.targets.length) {
             spider.targets.push({
@@ -186,13 +157,15 @@ export default function createWebCanvas(canvas: HTMLCanvasElement) {
         spider.current ??= target;
         const center = spider.current;
 
+        const scale = spider.scale * (1 + spread);
+
         // face target
-        const angle = Math.atan2(target.y - center.y, target.x - center.x);
+        spider.angle = Math.atan2(target.y - center.y, target.x - center.x);
 
         // push target back a bit, away from cursor
         if (spider.targetPadding) {
-            target.x -= spider.targetPadding * Math.cos(angle);
-            target.y -= spider.targetPadding * Math.sin(angle);
+            target.x -= spider.targetPadding * Math.cos(spider.angle);
+            target.y -= spider.targetPadding * Math.sin(spider.angle);
         }
 
         // update current position
@@ -200,8 +173,8 @@ export default function createWebCanvas(canvas: HTMLCanvasElement) {
             case "linear":
                 // can I make this a little more natural?
                 const distanceToTravel = {
-                    x: Math.cos(angle) * spider.interpolation.speed,
-                    y: Math.sin(angle) * spider.interpolation.speed,
+                    x: Math.cos(spider.angle) * spider.interpolation.speed,
+                    y: Math.sin(spider.angle) * spider.interpolation.speed,
                 };
                 center.x += lessExtreme(target.x - center.x, distanceToTravel.x);
                 center.y += lessExtreme(target.y - center.y, distanceToTravel.y);
@@ -213,21 +186,23 @@ export default function createWebCanvas(canvas: HTMLCanvasElement) {
                 break;
         }
 
+        const isAtRest = spider.targets.length < 2 && isAlmostZero({
+            x: center.x - target.x,
+            y: center.y - target.y,
+        }, 0.1);
+
         // walk legs
         for (let i = 0; i < idealFeet.length * 2; i++) {
 
-            // lol
-            const baseLegLength = 30 + spread * 100;
+            const baseLegLength = 30 * scale + (spread * 100);
 
             const footConfig = idealFeet[Math.floor(i / 2)];
             const side = (i % 2 === 0) ? 1 : -1;
-            const idealFoot = getPointAt(spider.current, footConfig.length * baseLegLength, angle + footConfig.angle * side);
             
-            // for testing ideal foot positions:
-            // spider.feet[i] = idealFoot; continue;
+            const idealFoot = getPointAt(spider.current, footConfig.length * baseLegLength, spider.angle + footConfig.angle * side);
 
-            // if no foot, set to ideal
-            if (spider.feet.length <= i || !spider.feet[i]) {
+            // if no foot, or we're at rest, set to ideal
+            if (spider.feet.length <= i || !spider.feet[i] || isAtRest && Math.random() > 0.99) {
                 spider.feet[i] = idealFoot;
                 continue;
             }
@@ -242,36 +217,78 @@ export default function createWebCanvas(canvas: HTMLCanvasElement) {
             }
         }
 
+        const kissingWiggle = spider.kissing ? Math.sin(timestamp / 100) : 0;
+        const walkingWiggle = isAtRest ? 0 : Math.sin(timestamp / 20) / 10;
+
         // ------------------- DRAW --------------------
 
         spider.feet.forEach(f => {
-            drawLine(center, f, "black", 1 + spread);
+            drawLine(center, f, "black", scale * 1);
         })
 
         // body
-        drawCircle(center, 3, "black");
+        drawCircle(center, scale * 3, "black");
 
         // head
-        const headPos = getPointAt(center, 5, angle);
-        drawCircle(headPos, 3 + 6 * spread, "black");
+        spider.headPosition = getPointAt(center, scale * 5, spider.angle + walkingWiggle);
+        drawCircle(spider.headPosition, scale * 3, "black");
 
-        // thorax
-        const thoraxPos = getPointAt(center, -6, angle);
-        drawCircle(thoraxPos, 6 + 6 * spread, "black");
+        // abdomen
+        const abdomenPos = getPointAt(center, scale * -6, spider.angle + kissingWiggle / 10 - walkingWiggle);
+        drawCircle(abdomenPos, scale * 6, "black");
         context.fill();
 
         // eyes
         const eyeAngle = 0.42;  // 25 deg ish
-        const leftEyePos = getPointAt(center, 5 + 5 * spread, angle - eyeAngle);
-        const rightEyePos = getPointAt(center, 5 + 5 * spread, angle + eyeAngle);
+        const leftEyePos = getPointAt(center, scale * 5, spider.angle - eyeAngle + walkingWiggle);
+        const rightEyePos = getPointAt(center, scale * 5, spider.angle + eyeAngle + walkingWiggle);
 
         // whites, with black outlines
-        drawCircle(leftEyePos, 2 + 2 * spread, "white", { color: "black", width: 1 });
-        drawCircle(rightEyePos, 2 + 2 * spread, "white", { color: "black", width: 1 });
+        drawCircle(leftEyePos, scale * 2, "white", { color: "black", width: 1 });
+        drawCircle(rightEyePos, scale * 2, "white", { color: "black", width: 1 });
 
         // pupils
-        drawCircle(leftEyePos, 1, "black");
-        drawCircle(rightEyePos, 1, "black");
+        drawCircle(leftEyePos, scale * 1, "black");
+        drawCircle(rightEyePos, scale * 1, "black");
+    }
+
+    function stepAndDrawHeart(delta: number, heart: HeartState) {
+
+        if (heart.delay > 0) {
+            heart.delay -= delta;
+            return;
+        }
+
+        heart.progress += delta;
+        if (heart.progress > heart.duration) {
+            heart.progress = heart.duration;
+        }
+
+        // 1 if complete, 0 if just started
+        const progress = heart.progress / heart.duration;
+
+        // start at center, end towards rotation
+        const position = {
+            x: heart.center.x + Math.cos(heart.angle) * progress * 20,
+            y: heart.center.y + Math.sin(heart.angle) * progress * 20,
+        }
+
+        // start at 1, end at 0
+        const opacity = 1 - progress;
+
+        // start at size, end at 1.5*size
+        const fontSize = heart.size + heart.size * progress * 0.5;
+
+        context.save();
+
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.textRendering = "optimizeSpeed";
+        context.font = fontSize + "px serif";
+        context.globalAlpha = opacity;
+        context.fillText(heart.char, position.x, position.y);
+
+        context.restore();
     }
 
     function clearCanvas() {
@@ -280,6 +297,7 @@ export default function createWebCanvas(canvas: HTMLCanvasElement) {
 
     return {
         stepAndDrawSpider,
+        stepAndDrawHeart,
         clearCanvas,
         setPixelScale,
         transformPointToCanvas,

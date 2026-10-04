@@ -1,7 +1,6 @@
 import "./style.css";
-import createWebCanvas from '../../../shared/src/webCanvas';
-import createWebSocket from '../../../shared/src/webSocket';
-import { SpiderState } from "shared";
+import { AnimationController, createWebCanvas } from 'shared/client';
+import { randomInRange, type SpiderState } from "shared";
 
 const canvas = document.createElement("canvas");
 canvas.id = "itsy-bitsy-canvas";
@@ -28,6 +27,7 @@ function spawnSpider() {
     }
 
     spiders.push({
+        id: "new-spider-" + Math.random().toFixed(10),
         current: transformPointToCanvas({
             x: points[i1][i2],
             y: points[1 - i1][i2],
@@ -39,22 +39,20 @@ function spawnSpider() {
         targetPadding: 0,
         interpolation,
         feet: [],
+        angle: 0,
+        headPosition: {
+            x: 0,
+            y: 0,
+        },
+        scale: randomInRange(0.5, 1.5),
+        kissing: true,
     });
 }
 
 const spiders: SpiderState[] = [];
 let nextSpiderTime = 2000;
 
-let prev: number;
-requestAnimationFrame(function update(timestamp: number) {
-    if (!prev) {
-        prev = timestamp;
-        requestAnimationFrame(update);
-        return;
-    }
-
-    const delta = timestamp - prev;
-    prev = timestamp;
+new AnimationController(({ timestamp, delta }) => {
 
     if (timestamp > nextSpiderTime) {
         nextSpiderTime = timestamp + (Math.random() > 0.1 ? Math.random() * 1000 + 1000 : 100);
@@ -62,7 +60,7 @@ requestAnimationFrame(function update(timestamp: number) {
     }
 
     clearCanvas();
-    spiders.forEach(spider => stepAndDrawSpider(delta, spider));
+    spiders.forEach(spider => stepAndDrawSpider(delta, timestamp, spider));
 
     for (let i = spiders.length - 1; i > -1; i--) {
         if (
@@ -76,8 +74,8 @@ requestAnimationFrame(function update(timestamp: number) {
         }
     }
 
-    requestAnimationFrame(update);
-});
+    return true;
+}).playIfPaused();
 
 window.addEventListener("keydown", ({ key }) => {
     if (key === "ArrowRight") {

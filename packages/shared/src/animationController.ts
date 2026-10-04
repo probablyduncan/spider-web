@@ -1,17 +1,17 @@
-type AnimationFrameCallback = (deltaMS: DOMHighResTimeStamp) => boolean;
+type AnimationCallback = (state: { timestamp: DOMHighResTimeStamp, delta: DOMHighResTimeStamp }) => boolean;
 
-export class AnimationFrameController {
-    
-    private _prevTimestampMS?: DOMHighResTimeStamp;
-    private readonly _animationCallback: AnimationFrameCallback;
-    
+export class AnimationController {
+
+    private _prevTimestamp?: DOMHighResTimeStamp;
+    private readonly _animationCallback: AnimationCallback;
+
     /**
      * @param animationCallback callback which is run on each frame. Should return true if animation should continue, and false if animation is complete and should not keep looping.
     */
-   constructor(animationCallback: AnimationFrameCallback) {
-       this._animationCallback = animationCallback;
+    constructor(animationCallback: AnimationCallback) {
+        this._animationCallback = animationCallback;
     }
-    
+
     isRunning: boolean = false;
 
     playIfPaused() {
@@ -37,18 +37,18 @@ export class AnimationFrameController {
 
     private _cleanup() {
         this.isRunning = false;
-        this._prevTimestampMS = undefined;
+        this._prevTimestamp = undefined;
     }
 
-    private _frameCallback: FrameRequestCallback = (timestampMS: DOMHighResTimeStamp) => {
+    private _frameCallback: FrameRequestCallback = (timestamp: DOMHighResTimeStamp) => {
         if (!this.isRunning) {
             return;
         }
 
-        const deltaMS = this._prevTimestampMS ? timestampMS - this._prevTimestampMS : 0;
-        this._prevTimestampMS = timestampMS;
+        const delta = this._prevTimestamp ? timestamp - this._prevTimestamp : 0;
+        this._prevTimestamp = timestamp;
 
-        if (deltaMS <= 0 || this._animationCallback(deltaMS)) {
+        if (delta <= 0 || this._animationCallback({ delta, timestamp })) {
             this._queueFrame();
         } else {
             this._cleanup();

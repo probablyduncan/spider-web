@@ -1,51 +1,168 @@
-import type { SpiderState } from 'shared';
-import createWebCanvas from '../../shared/src/webCanvas';
-import createWebSocket from '../../shared/src/webSocket';
+import type { HeartState, SpiderState } from 'shared';
 import './style.css'
+import { angleDifference, getPointAroundBox, getPointsAcrossBox, isAlmostZero, midpoint, randomInRange } from '../../shared/src/math';
+import { AnimationController, createWebCanvas, createWebSocket } from 'shared/client';
 
-const WSS = "localhost:8787";
+const WSS = "https://memphis-comparable-theaters-visit.trycloudflare.com/"//"localhost:8787";
 
 const canvas = document.getElementById("itsy-bitsy-canvas") as HTMLCanvasElement;
 
-const { stepAndDrawSpider, clearCanvas, setPixelScale, transformPointToCanvas } = createWebCanvas(canvas);
+const { stepAndDrawSpider, stepAndDrawHeart, clearCanvas, setPixelScale, transformPointToCanvas, getCanvasSize } = createWebCanvas(canvas);
 const sock = createWebSocket(WSS);
 
 // NOT NEEDED YET
-sock.send("init", {});
+// sock.send("init", { });
 
 const spiders: Map<string, SpiderState> = new Map();
-const me: SpiderState = createSpiderState();
 
-let prev: number;
-requestAnimationFrame(function update(timestamp: number) {
-    if (!prev) {
-        prev = timestamp;
-        requestAnimationFrame(update);
-        return;
-    }
-
-    const delta = timestamp - prev;
-    prev = timestamp;
-
-    clearCanvas();
-    for (const spider of spiders.values()) {
-        stepAndDrawSpider(delta, spider);
-    }
-    stepAndDrawSpider(delta, me);
-
-    requestAnimationFrame(update);
+const me: SpiderState = createSpiderState({
+    id: "me",
 });
+
+const kissingConfig = {
+    startAfterTime: 2_000,
+    kissForTime: 5_000,
+    cooldownTime: 20_000,
+    heartDuration: 1_000,
+    frequency: 500,
+    needToBeFacingThisMuch: 0.5,
+    needToBeThisCloseToKiss: 20,
+} as const;
+
+const kisses = new Map<HeartState["key"], number>();
+const hearts: HeartState[] = [];
+
+new AnimationController(({ delta, timestamp }) => {
+    clearCanvas();
+
+    const spidersArray = [...spiders.values(), me];
+    for (let i = 0; i < spidersArray.length; i++) {
+        stepAndDrawSpider(delta, timestamp, spidersArray[i]);
+    }
+
+    for (let i = 0; i < spidersArray.length; i++) {
+        const kisser = spidersArray[i];
+        for (let j = i + 1; j < spidersArray.length; j++) {
+            const kissee = spidersArray[j];
+            const key: HeartState["key"] = `${kisser.id}+${kissee.id}=4ever`;
+
+            const difference = {
+                x: kisser.headPosition.x - kissee.headPosition.x,
+                y: kisser.headPosition.y - kissee.headPosition.y,
+            };
+
+            const canKiss = angleDifference(kisser.angle, kissee.angle) > kissingConfig.needToBeFacingThisMuch
+                && isAlmostZero(difference, kissingConfig.needToBeThisCloseToKiss);
+
+            // not close enough to kiss
+            if (!canKiss) {
+                if (kisses.has(key)) {
+                    clearTimeout(kisses.get(key));
+                    kisses.delete(key);
+                }
+
+                continue;
+            }
+
+            // close enough to kiss, but haven't started yet
+            if (!kisses.has(key)) {
+
+                const interestAngle = midpoint(kisser.angle, kissee.angle);
+
+                // ok we're interested
+                for (let h = 0; h < 3; h++) {
+                    hearts.push({
+                        key,
+                        center: {
+                            x: kissee.headPosition.x + difference.x / 2 + Math.random() * 10 - 5,
+                            y: kissee.headPosition.y + difference.y / 2 + Math.random() * 10 - 5,
+                        },
+                        char: "?",
+                        angle: interestAngle - (Math.random() > 0.34 ? Math.PI : 0),
+                        delay: h * 100,
+                        size: 20,
+                        duration: kissingConfig.heartDuration,
+                        progress: 0,
+                    });
+                }
+
+                // start kissing after a certain amount of time
+                kisses.set(key, setTimeout(() => {
+
+                    kisser.kissing = true;
+                    kissee.kissing = true;
+
+                    for (let h = 0; h < kissingConfig.kissForTime / 500; h++) {
+                        hearts.push({
+                            key,
+                            center: {
+                                x: kissee.headPosition.x + difference.x / 2 + randomInRange(-10, 10),
+                                y: kissee.headPosition.y + difference.y / 2 + randomInRange(-5, 5),
+                            },
+                            char: ["❤️", "💖", "❤️", "❤️‍🔥"][Math.floor(Math.random() * 4)],
+                            angle: randomInRange(-0.5, 0.5) - Math.PI / 2,
+                            delay: kissingConfig.kissForTime * Math.pow(Math.random(), 2),
+                            size: randomInRange(8, 24),
+                            duration: kissingConfig.heartDuration,
+                            progress: 0,
+                        });
+                    }
+
+                    kisses.set(key, setTimeout(() => {
+
+                        kisses.set(key, setTimeout(() => {
+                            kisses.delete(key);
+                        }, kissingConfig.cooldownTime));
+
+                        kisser.kissing = false;
+                        kissee.kissing = false;
+
+                        const babyKey = "baby-" + Math.random().toFixed(10);
+                        spiders.set(babyKey, createSpiderState({
+                            id: babyKey,
+                            current: { ...Math.random() > 0.5 ? kisser.current : kissee.current },
+                            targets: [getPointAroundBox(getCanvasSize(), 200)],
+                            interpolation: {
+                                type: "ease",
+                                halfLife: 500,
+                            },
+                            scale: (kisser.scale + kissee.scale) / 3,
+                        }));
+                    }, kissingConfig.kissForTime));
+                }, kissingConfig.startAfterTime));
+            }
+
+        }
+    }
+
+    for (let i = hearts.length - 1; i > -1; i--) {
+        const heart = hearts[i];
+
+        // remove if fully elapsed or if we've stopped kissing and this heart hasn't started yet
+        if (heart.progress >= heart.duration || (heart.progress <= 0 && !kisses.has(heart.key))) {
+            hearts.splice(i, 1);
+        }
+        else {
+            stepAndDrawHeart(delta, hearts[i])
+        }
+    }
+
+    return true;
+}).playIfPaused();
 
 sock.listen("init", (e) => {
     e.connections.forEach(c => {
         spiders.set(c.id, createSpiderState({
+            id: c.id,
             targets: c.points.map(p => transformPointToCanvas(p)),
         }));
     });
 });
 
 sock.listen("join", (e) => {
-    spiders.set(e.id, createSpiderState());
+    spiders.set(e.id, createSpiderState({
+        id: e.id,
+    }));
 });
 
 sock.listen("move", (e) => {
@@ -68,6 +185,20 @@ document.addEventListener('mousemove', (e) => {
     processInput(e);
 });
 
+document.addEventListener("mousedown", (e) => {
+    me.scale /= 1.2;
+    if (me.interpolation.type === "ease") {
+        me.interpolation.halfLife *= 10;
+    }
+});
+
+document.addEventListener("mouseup", () => {
+    me.scale *= 1.2;
+    if (me.interpolation.type === "ease") {
+        me.interpolation.halfLife /= 10;
+    }
+});
+
 document.addEventListener("touchmove", (e) => {
     processInput(...e.touches);
 });
@@ -82,20 +213,20 @@ document.addEventListener("touchend", (e) => {
     }
 });
 
-function processInput(...points: { clientX: number, clientY: number }[]) {
-    me.targets = points.map(p => transformPointToCanvas({
-        x: p.clientX,
-        y: p.clientY,
-    }, {
-        x: window.innerWidth,
-        y: window.innerHeight,
+function processInput(...touches: { clientX: number, clientY: number }[]) {
+    const points = touches.map(t => ({
+        x: t.clientX / window.innerWidth,
+        y: t.clientY / window.innerHeight,
     }));
 
-    sock.send("move", { points: me.targets });
+    me.targets = points.map(p => transformPointToCanvas(p));
+
+    sock.send("move", { points });
 }
 
-function createSpiderState(state: Partial<SpiderState> = {}) {
+function createSpiderState(state: Partial<SpiderState> & Pick<SpiderState, "id">) {
     const defaultState: SpiderState = {
+        id: "",
         targets: [],
         current: {
             x: 0,
@@ -107,6 +238,13 @@ function createSpiderState(state: Partial<SpiderState> = {}) {
             type: "ease",
             halfLife: 100,
         },
+        angle: 0,
+        headPosition: {
+            x: 0,
+            y: 0,
+        },
+        scale: 1,
+        kissing: false,
     }
     return Object.assign(defaultState, state);
 }
@@ -119,25 +257,34 @@ window.addEventListener("keydown", ({ key }) => {
         setPixelScale(prev => prev / 2);
     }
     else if (key === "1") {
-        spiders.set("ease", createSpiderState({
-            current: transformPointToCanvas({ x: 0, y: 0 }),
-            targets: [transformPointToCanvas({ x: 1, y: 1 })],
+        const points = getPointsAcrossBox(getCanvasSize(), 100);
+        const id = "ease-" + Math.random().toFixed(10);
+        spiders.set(id, createSpiderState({
+            id,
+            current: points[0],
+            targets: [points[1]],
+            scale: randomInRange(0.5, 1.5),
         }));
         setTimeout(() => {
-            spiders.delete("ease");
-        }, 1000);
+            spiders.delete(id);
+        }, 5000);
     }
     else if (key === "2") {
-        spiders.set("linear", createSpiderState({
-            current: transformPointToCanvas({ x: 0, y: 0 }),
-            targets: [transformPointToCanvas({ x: 1, y: 1 })],
+        const points = getPointsAcrossBox(getCanvasSize(), 40);
+        const id = "linear-" + Math.random().toFixed(10);
+        spiders.set(id, createSpiderState({
+            id,
+            current: points[0],
+            targets: [points[1]],
             interpolation: {
                 type: "linear",
-                speed: 10,
-            }
+                speed: 3,
+            },
+            scale: randomInRange(0.5, 1.5),
         }));
         setTimeout(() => {
-            spiders.delete("linear");
+            //@ts-ignore
+            spiders.get(id).interpolation.speed = 0;
         }, 5000);
     }
 });

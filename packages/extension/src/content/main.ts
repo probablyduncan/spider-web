@@ -1,38 +1,18 @@
 import "./style.css";
 import createWebCanvas from '../../../shared/src/webCanvas';
 import createWebSocket from '../../../shared/src/webSocket';
-import createWebStepper from '../../../shared/src/webStepper';
 import { SpiderState } from "shared";
 
 const canvas = document.createElement("canvas");
 canvas.id = "itsy-bitsy-canvas";
 document.body.appendChild(canvas);
 
-const draw = createWebCanvas(canvas);
-const step = createWebStepper();
-
-window.addEventListener("mousemove", (e) => {
-    return;
-    spider.targets = [{
-        x: e.clientX / canvas.clientWidth,
-        y: e.clientY / canvas.clientHeight,
-    }]
-});
+const { stepAndDrawSpider, clearCanvas, transformPointToCanvas, setPixelScale, getCanvasSize } = createWebCanvas(canvas);
 
 // window.addEventListener("scroll", (e) => {
 //     spiders should translate up/down the page?
 //     idk, maybe too much for now
 // });
-
-const spider: SpiderState = {
-    targets: [],
-    targetPadding: 0.01,
-    feet: [],
-    interpolation: {
-        type: "ease",
-        halfLife: 100,
-    },
-};
 
 function spawnSpider() {
     const i1 = Math.floor(Math.random() + 0.5);
@@ -44,21 +24,21 @@ function spawnSpider() {
         halfLife: Math.random() * 400 + 100,
     } : {
         type: "linear",
-        speed: Math.random() * 0.08 + 0.001,
+        speed: Math.random() * 2 + 1,
     }
 
     spiders.push({
-        current: {
+        current: transformPointToCanvas({
             x: points[i1][i2],
             y: points[1 - i1][i2],
-        },
-        targets: [{
+        }),
+        targets: [transformPointToCanvas({
             x: points[i1][1 - i2],
             y: points[1 - i1][1 - i2],
-        }],
+        })],
         targetPadding: 0,
-        feet: [],
         interpolation,
+        feet: [],
     });
 }
 
@@ -81,15 +61,15 @@ requestAnimationFrame(function update(timestamp: number) {
         spawnSpider();
     }
 
-    const spidersToRender = step(delta, [...spiders, spider]);
-    draw(spidersToRender);
+    clearCanvas();
+    spiders.forEach(spider => stepAndDrawSpider(delta, spider));
 
     for (let i = spiders.length - 1; i > -1; i--) {
         if (
-            spiders[i].targets[0].x < 0 && spiders[i].current!.x < 0
-            || spiders[i].targets[0].y < 0 && spiders[i].current!.y < 0
-            || spiders[i].targets[0].x > 1 && spiders[i].current!.x > 1
-            || spiders[i].targets[0].y > 1 && spiders[i].current!.y > 1
+            spiders[i].targets[0].x < 0 && spiders[i].current.x < 0
+            || spiders[i].targets[0].y < 0 && spiders[i].current.y < 0
+            || spiders[i].targets[0].x > getCanvasSize().x && spiders[i].current.x > getCanvasSize().x
+            || spiders[i].targets[0].y > getCanvasSize().y && spiders[i].current.y > getCanvasSize().y
 
         ) {
             spiders.splice(i, 1);
@@ -97,4 +77,13 @@ requestAnimationFrame(function update(timestamp: number) {
     }
 
     requestAnimationFrame(update);
+});
+
+window.addEventListener("keydown", ({ key }) => {
+    if (key === "ArrowRight") {
+        setPixelScale(prev => prev * 2);
+    }
+    else if (key === "ArrowLeft") {
+        setPixelScale(prev => prev / 2);
+    }
 });

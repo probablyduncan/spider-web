@@ -62,3 +62,14 @@ so the spider itself should be the center of touches
     center: Point = [0, 0];
     touches: Point[] = [];
 }
+
+
+
+but what's the actual problem I'm solving
+lerp points vs px points
+
+I want to be able to create a canvas and pass in a series of points, and it should draw
+but updating state and drawing seem contrary?
+but the canvas should own its size
+and speed/stepping are tied to pixels, not lerp numbers
+so I guess 

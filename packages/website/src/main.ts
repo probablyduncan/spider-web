@@ -1,15 +1,13 @@
-import type { Point, SpiderState } from 'shared';
+import type { SpiderState } from 'shared';
 import createWebCanvas from '../../shared/src/webCanvas';
 import createWebSocket from '../../shared/src/webSocket';
-import createWebStepper from '../../shared/src/webStepper';
 import './style.css'
 
 const WSS = "localhost:8787";
 
 const canvas = document.getElementById("itsy-bitsy-canvas") as HTMLCanvasElement;
 
-const draw = createWebCanvas(canvas);
-const step = createWebStepper();
+const { stepAndDrawSpider, clearCanvas, setPixelScale, transformPointToCanvas } = createWebCanvas(canvas);
 const sock = createWebSocket(WSS);
 
 // NOT NEEDED YET
@@ -29,19 +27,25 @@ requestAnimationFrame(function update(timestamp: number) {
     const delta = timestamp - prev;
     prev = timestamp;
 
-    const spidersToRender = step(delta, [...spiders.values(), me]);
-    draw(spidersToRender);
+    clearCanvas();
+    for (const spider of spiders.values()) {
+        stepAndDrawSpider(delta, spider);
+    }
+    stepAndDrawSpider(delta, me);
+
     requestAnimationFrame(update);
 });
 
 sock.listen("init", (e) => {
     e.connections.forEach(c => {
-        spiders.set(c.id, createSpiderState({ targets: c.points }));
+        spiders.set(c.id, createSpiderState({
+            targets: c.points.map(p => transformPointToCanvas(p)),
+        }));
     });
 });
 
 sock.listen("join", (e) => {
-    spiders.set(e.id, createSpiderState())
+    spiders.set(e.id, createSpiderState());
 });
 
 sock.listen("move", (e) => {
@@ -49,7 +53,7 @@ sock.listen("move", (e) => {
     if (!state) {
         return;
     }
-    state.targets = e.points;
+    state.targets = e.points.map(p => transformPointToCanvas(p));
 });
 
 sock.listen("leave", (e) => {
@@ -69,14 +73,25 @@ document.addEventListener("touchmove", (e) => {
 });
 
 function processInput(...points: { clientX: number, clientY: number }[]) {
-    me.targets = points.map(mouseEventToLerp);
+    me.targets = points.map(p => transformPointToCanvas({
+        x: p.clientX,
+        y: p.clientY,
+    }, {
+        x: window.innerWidth,
+        y: window.innerHeight,
+    }));
+
     sock.send("move", { points: me.targets });
 }
 
 function createSpiderState(state: Partial<SpiderState> = {}) {
     const defaultState: SpiderState = {
         targets: [],
-        targetPadding: 0,
+        current: {
+            x: 0,
+            y: 0,
+        },
+        targetPadding: 20,
         feet: [],
         interpolation: {
             type: "ease",
@@ -86,18 +101,33 @@ function createSpiderState(state: Partial<SpiderState> = {}) {
     return Object.assign(defaultState, state);
 }
 
-function mouseEventToPoint(e: { clientX: number, clientY: number }) {
-    return { x: e.clientX, y: e.clientY };
-}
-
-function mouseEventToLerp(e: { clientX: number, clientY: number }) {
-    return { x: e.clientX / canvas.clientWidth, y: e.clientY / canvas.clientHeight };
-}
-
-function toPixels(point: Point) {
-    return { x: point.x * canvas.clientWidth, y: point.y * canvas.clientHeight };
-}
-
-function toLerp(point: Point) {
-    return { x: point.x / canvas.clientWidth, y: point.y / canvas.clientHeight };
-}
+window.addEventListener("keydown", ({ key }) => {
+    if (key === "ArrowRight") {
+        setPixelScale(prev => prev * 2);
+    }
+    else if (key === "ArrowLeft") {
+        setPixelScale(prev => prev / 2);
+    }
+    else if (key === "1") {
+        spiders.set("ease", createSpiderState({
+            current: transformPointToCanvas({ x: 0, y: 0}),
+            targets: [transformPointToCanvas({ x: 1, y: 1})],
+        }));
+        setTimeout(() => {
+            spiders.delete("ease");
+        }, 1000);
+    }
+    else if (key === "2") {
+        spiders.set("linear", createSpiderState({
+            current: transformPointToCanvas({ x: 0, y: 0}),
+            targets: [transformPointToCanvas({ x: 1, y: 1})],
+            interpolation: {
+                type: "linear",
+                speed: 10,
+            }
+        }));
+        setTimeout(() => {
+            spiders.delete("linear");
+        }, 5000);
+    }
+});

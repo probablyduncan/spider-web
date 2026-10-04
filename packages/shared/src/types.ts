@@ -11,12 +11,12 @@ type Readonly<T> =
 
 /**
  * this is persisted across frames
- * all points are [0, 1]
+ * all points should be sized to the canvas
  */
 export type SpiderState = {
     targets: Point[];
     /** if undefined, spider will render on target */
-    current?: Point;
+    current: Point;
     /** the number of pixels to keep the spider away from the target */
     targetPadding?: number;
     feet: Point[];
@@ -36,17 +36,17 @@ export type SpiderState = {
 /**
  * this is created each frame
  * and passed into the renderer
- * all points are [0, 1]
+ * all points should be sized to the canvas
  * */
-export type RenderableSpider = Readonly<{
-    center: Point;
-    angle: number;
-    legs: {
-        foot: Point;
-        knee: Point;
-        hip: Point;
-    }[];
-}>;
+// export type RenderableSpider = Readonly<{
+//     center: Point;
+//     angle: number;
+//     legs: {
+//         foot: Point;
+//         knee: Point;
+//         hip: Point;
+//     }[];
+// }>;
 
 export type ConnectionId = string;
 export type ConnectionInfo = {

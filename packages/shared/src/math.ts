@@ -1,4 +1,4 @@
-import { Point } from "./types";
+import { type Point } from "./types";
 
 export function moreExtreme(x1: number, x2: number) {
     return Math.abs(x1) > Math.abs(x2) ? x1 : x2;

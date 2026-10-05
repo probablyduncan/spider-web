@@ -1,5 +1,5 @@
 import { getPointAt, isAlmostZero, lessExtreme, toRads } from "./math";
-import { HeartState, Point, SpiderState } from "./types";
+import type { HeartState, Point, SpiderState } from "./types";
 
 export function createWebCanvas(canvas: HTMLCanvasElement) {
     const context = canvas?.getContext("2d") as CanvasRenderingContext2D;

@@ -72,7 +72,6 @@ export function throttle<TParams extends any[]>(
             setTimeout(() => {
                 waiting = false;
             }, cooldown);
-            console.log("sending!")
         }
     }
 }

@@ -19,6 +19,17 @@ const me: SpiderState = createSpiderState({
     id: "me",
 });
 
+const updateCursor = (() => {
+    let cursorHidden = false;
+    return (state: "show" | "hide") => {
+        if (cursorHidden === (state === "hide")) {
+            return;
+        }
+        cursorHidden = (state === "hide");
+        document.body.classList.toggle("no-cursor", cursorHidden);
+    }
+})();
+
 const kissingConfig = {
     startAfterTime: 2_000,
     kissForTime: 5_000,
@@ -54,14 +65,27 @@ new AnimationController(({ delta, timestamp }) => {
             const canKiss = angleDifference(kisser.angle, kissee.angle) > kissingConfig.needToBeFacingThisMuch
                 && isAlmostZero(difference, kissingConfig.needToBeThisCloseToKiss);
 
+            function cleanUpState() {
+                kisser.kissing = false;
+                kissee.kissing = false;
+                if (kisser.id === "me" || kissee.id === "me") {
+                    updateCursor("show");
+                }
+            }
+
             // not close enough to kiss
             if (!canKiss) {
                 if (kisses.has(key)) {
                     clearTimeout(kisses.get(key));
                     kisses.delete(key);
+                    cleanUpState();
                 }
 
                 continue;
+            }
+
+            if (kisser.id === "me" || kissee.id === "me") {
+                updateCursor("hide");
             }
 
             // close enough to kiss, but haven't started yet
@@ -114,8 +138,7 @@ new AnimationController(({ delta, timestamp }) => {
                             kisses.delete(key);
                         }, kissingConfig.cooldownTime));
 
-                        kisser.kissing = false;
-                        kissee.kissing = false;
+                        cleanUpState();
 
                         const babyKey = "baby-" + Math.random().toFixed(10);
                         spiders.set(babyKey, createSpiderState({

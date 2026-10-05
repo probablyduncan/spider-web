@@ -20,6 +20,10 @@ body {
     height: 100svh;
 }
 
+body.no-cursor {
+    cursor: none;
+}
+
 canvas#itsy-bitsy-canvas {
     position: fixed;
     inset: 0;

@@ -1,4 +1,4 @@
-import { getPointAt, isAlmostZero, lessExtreme, toRads } from "./math";
+import { getPointAt, lessExtreme, toRads } from "./math";
 import type { HeartState, Point, SpiderState } from "./types";
 
 export function createWebCanvas(canvas: HTMLCanvasElement) {
@@ -351,5 +351,7 @@ export function createWebCanvas(canvas: HTMLCanvasElement) {
         getCanvasSize: () => ({
             ...canvasSize
         }),
+        getCanvasAspectRatio: () => canvasSize.x / canvasSize.y,
+        getCanvasOrientation: () => canvasSize.x > canvasSize.y ? "landscape" : "portrait",
     };
 }

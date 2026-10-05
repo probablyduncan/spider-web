@@ -55,7 +55,7 @@ export function createWebSocket(host: string) {
 
     return {
         listen,
-        send: throttle(send, 250),
+        send: throttle(send, 83.34),
         close: () => ws.close()
     }
 }

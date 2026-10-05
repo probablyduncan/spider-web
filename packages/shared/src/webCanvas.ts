@@ -13,7 +13,7 @@ export function createWebCanvas(canvas: HTMLCanvasElement) {
         y: canvas.clientHeight,
     }
 
-    let pixelScale: number = 3;
+    let pixelScale: number = 1;
     function setPixelScale(scale: number | ((prev: number) => number)) {
         if (typeof scale === "function") {
             pixelScale = scale(pixelScale);
@@ -121,6 +121,27 @@ export function createWebCanvas(canvas: HTMLCanvasElement) {
         context.closePath();
     }
 
+    function drawEllipse(center: Point, radius: Point, angle: number, fillColor?: string, stroke?: {
+        color: string,
+        width: number,
+    }) {
+        context.beginPath();
+        context.ellipse(center.x, center.y, radius.x, radius.y, angle, 0, 2 * Math.PI);
+
+        if (fillColor) {
+            context.fillStyle = fillColor;
+            context.fill();
+        }
+
+        if (stroke) {
+            context.lineWidth = stroke.width;
+            context.strokeStyle = stroke.color;
+            context.stroke();
+        }
+
+        context.closePath();
+    }
+
     const idealFeet = [
         {
             angle: toRads(20),
@@ -168,28 +189,42 @@ export function createWebCanvas(canvas: HTMLCanvasElement) {
             target.y -= spider.targetPadding * Math.sin(spider.angle);
         }
 
+        const distanceToTarget = {
+            x: target.x - center.x,
+            y: target.y - center.y,
+        }
+
+        let velocity: number;
+
         // update current position
         switch (spider.interpolation.type) {
             case "linear":
-                // can I make this a little more natural?
-                const distanceToTravel = {
-                    x: Math.cos(spider.angle) * spider.interpolation.speed,
-                    y: Math.sin(spider.angle) * spider.interpolation.speed,
-                };
-                center.x += lessExtreme(target.x - center.x, distanceToTravel.x);
-                center.y += lessExtreme(target.y - center.y, distanceToTravel.y);
-                break;
+                {
+                    // can I make this a little more natural?
+                    velocity = spider.interpolation.speed;
+                    const distanceToTravel = {
+                        x: Math.cos(spider.angle) * spider.interpolation.speed,
+                        y: Math.sin(spider.angle) * spider.interpolation.speed,
+                    };
+                    center.x += lessExtreme(distanceToTarget.x, distanceToTravel.x);
+                    center.y += lessExtreme(distanceToTarget.y, distanceToTravel.y);
+                    break;
+                }
             case "ease":
-                const lerp = Math.min(1, 0.5 * deltaMS / spider.interpolation.halfLife);
-                center.x += (target.x - center.x) * lerp;
-                center.y += (target.y - center.y) * lerp;
-                break;
+                {
+                    const lerp = Math.min(1, 0.5 * deltaMS / spider.interpolation.halfLife);
+                    const distanceToTravel = {
+                        x: distanceToTarget.x * lerp,
+                        y: distanceToTarget.y * lerp,
+                    };
+                    velocity = Math.sqrt(Math.pow(distanceToTravel.x, 2) + Math.pow(distanceToTravel.y, 2));
+                    center.x += distanceToTravel.x;
+                    center.y += distanceToTravel.y;
+                    break;
+                }
         }
 
-        const isAtRest = spider.targets.length < 2 && isAlmostZero({
-            x: center.x - target.x,
-            y: center.y - target.y,
-        }, 0.1);
+        const isAtRest = velocity < 0.1;
 
         // walk legs
         for (let i = 0; i < idealFeet.length * 2; i++) {
@@ -198,7 +233,7 @@ export function createWebCanvas(canvas: HTMLCanvasElement) {
 
             const footConfig = idealFeet[Math.floor(i / 2)];
             const side = (i % 2 === 0) ? 1 : -1;
-            
+
             const idealFoot = getPointAt(spider.current, footConfig.length * baseLegLength, spider.angle + footConfig.angle * side);
 
             // if no foot, or we're at rest, set to ideal
@@ -217,8 +252,10 @@ export function createWebCanvas(canvas: HTMLCanvasElement) {
             }
         }
 
-        const kissingWiggle = spider.kissing ? Math.sin(timestamp / 100) : 0;
-        const walkingWiggle = isAtRest ? 0 : Math.sin(timestamp / 20) / 10;
+        // this is so that all spiders aren't synced
+        const standingWiggle = Math.sin(timestamp / 100) / 20;
+        const walkingWiggle = Math.min(velocity, 3) * Math.sin(timestamp / 50 + Math.random() * 0.1) / 20;
+        const kissingWiggle = spider.kissing ? Math.sin(timestamp / 60) / 15 : 0;
 
         // ------------------- DRAW --------------------
 
@@ -234,7 +271,7 @@ export function createWebCanvas(canvas: HTMLCanvasElement) {
         drawCircle(spider.headPosition, scale * 3, "black");
 
         // abdomen
-        const abdomenPos = getPointAt(center, scale * -6, spider.angle + kissingWiggle / 10 - walkingWiggle);
+        const abdomenPos = getPointAt(center, scale * -6, spider.angle + kissingWiggle - walkingWiggle - standingWiggle);
         drawCircle(abdomenPos, scale * 6, "black");
         context.fill();
 
@@ -243,13 +280,23 @@ export function createWebCanvas(canvas: HTMLCanvasElement) {
         const leftEyePos = getPointAt(center, scale * 5, spider.angle - eyeAngle + walkingWiggle);
         const rightEyePos = getPointAt(center, scale * 5, spider.angle + eyeAngle + walkingWiggle);
 
-        // whites, with black outlines
-        drawCircle(leftEyePos, scale * 2, "white", { color: "black", width: 1 });
-        drawCircle(rightEyePos, scale * 2, "white", { color: "black", width: 1 });
+        const eyeSize = scale * 2;
+        // black outlines
+        drawCircle(leftEyePos, eyeSize + 0.5, "black");
+        drawCircle(rightEyePos, eyeSize + 0.5, "black");
+
+        // whites of the eyes
+        const blinkCycleLength = 2500;
+        const blinkLength = 250;
+        const blink = 1 - ((isAtRest && ((timestamp % blinkCycleLength) < blinkLength)) 
+            ? Math.sin(Math.PI * (timestamp % blinkCycleLength) / blinkLength) 
+            : 0);
+        drawEllipse(leftEyePos, { x: eyeSize * blink, y: eyeSize }, spider.angle, "white", { color: "black", width: 1 });
+        drawEllipse(rightEyePos, { x: eyeSize * blink, y: eyeSize }, spider.angle, "white", { color: "black", width: 1 });
 
         // pupils
-        drawCircle(leftEyePos, scale * 1, "black");
-        drawCircle(rightEyePos, scale * 1, "black");
+        drawCircle(leftEyePos, eyeSize / 2, "black");
+        drawCircle(rightEyePos, eyeSize / 2, "black");
     }
 
     function stepAndDrawHeart(delta: number, heart: HeartState) {

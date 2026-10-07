@@ -1,7 +1,9 @@
-import type { HeartState, SpiderState } from 'shared';
 import './style.css'
-import { angleDifference, getPointAroundBox, getPointsAcrossBox, isAlmostZero, midpoint, randomInRange } from '../../shared/src/math';
-import { AnimationController, createWebCanvas, createWebSocket } from 'shared/client';
+import { angleDifference, getPointAroundBox, getPointsAcrossBox, isAlmostZero, midpoint, randomInRange } from 'shared/math';
+import type { HeartState, SpiderState } from 'shared/types';
+import { createWebSocket } from "shared/webSocket"
+import { createWebCanvas } from "shared/webCanvas"
+import { AnimationController } from 'shared/animationController';
 
 
 const canvas = document.getElementById("itsy-bitsy-canvas") as HTMLCanvasElement;

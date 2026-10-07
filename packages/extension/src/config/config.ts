@@ -1,7 +1,9 @@
 import { ExtensionSettings, getSetting, isSetting, resetSetting, setSetting } from '@/shared/settings';
 import './config.css';
-// import { AnimationController, createWebCanvas } from 'shared/client';
-// import { isAlmostZero, Point, SpiderState } from 'shared';
+// import { AnimationController } from 'shared/animationController';
+// import { createWebCanvas } from 'shared/webCanvas';
+// import { isAlmostZero } from 'shared/math';
+// import { Point, SpiderState } from 'shared/types';
 
 const reset = document.querySelector<HTMLButtonElement>(`button#reset`);
 

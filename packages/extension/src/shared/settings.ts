@@ -6,13 +6,6 @@ const defaultSettings = {
     scatter: 1,
 };
 
-// Frequency:
-// Blue Moon | Occasional | Regular | Infestation
-// Size:
-// Pinhead | Fingernail | Silver Dollar | Dinner Plate
-// Resolution:
-// Crisp | Soggy | Retro | No Spectacles
-
 export type ExtensionSettings = typeof defaultSettings;
 export type ExtensionSettingKey = keyof ExtensionSettings;
 export type OnExtensionSettingChange = (changes: Partial<Record<ExtensionSettingKey, { newValue: boolean, oldValue: boolean }>>) => void;

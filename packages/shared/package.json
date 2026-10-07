@@ -2,11 +2,12 @@
   "name": "shared",
   "version": "1.0.0",
   "description": "",
-  "types": "./src/index.ts",
-  "main": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./client": "./src/client.index.ts"
+    "./animationController": "./src/animationController.ts",
+    "./webCanvas": "./src/webCanvas.ts",
+    "./webSocket": "./src/webSocket.ts",
+    "./math": "./src/math.ts",
+    "./types": "./src/types.ts"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

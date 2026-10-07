@@ -1,7 +1,9 @@
 import "./style.css";
-import { AnimationController, createWebCanvas } from 'shared/client';
-import { getPointAroundBox, getPointsAcrossBox, isAlmostZero, randomInRange, type SpiderState } from "shared";
+import { getPointAroundBox, getPointsAcrossBox, isAlmostZero, randomInRange } from "shared/math";
 import { getSetting, onSettingChange } from "@/shared/settings";
+import { createWebCanvas } from "shared/webCanvas";
+import { SpiderState } from "shared/types";
+import { AnimationController } from "shared/animationController";
 
 const canvas = document.createElement("canvas");
 canvas.id = "itsy-bitsy-canvas";
@@ -176,6 +178,7 @@ onSettingChange("enabled", (value) => {
         nextSpiderTimeoutId = 0;
         animationController.pause();
         clearCanvas();
+        spiders.length = 0
     } else if (!nextSpiderTimeoutId) {
         queueSpider();
     }

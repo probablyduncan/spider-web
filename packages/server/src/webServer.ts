@@ -1,5 +1,5 @@
 import { ConnectionContext, Server, type Connection, type WSMessage } from "partyserver";
-import type { ClientToServer_SpiderMessages, ConnectionId, ConnectionInfo, ServerToClient_SpiderMessageKeys, ServerToClient_SpiderMessages } from "shared";
+import type { ClientToServer_SpiderMessages, ConnectionId, ConnectionInfo, ServerToClient_SpiderMessageKeys, ServerToClient_SpiderMessages } from "shared/types";
 
 export class Spiders extends Server<Env> {
     readonly options = { hibernate: true };

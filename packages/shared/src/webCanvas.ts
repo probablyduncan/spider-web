@@ -252,7 +252,6 @@ export function createWebCanvas(canvas: HTMLCanvasElement) {
             }
         }
 
-        // this is so that all spiders aren't synced
         const standingWiggle = Math.sin(timestamp / 100) / 20;
         const walkingWiggle = Math.min(velocity, 3) * Math.sin(timestamp / 50 + Math.random() * 0.1) / 20;
         const kissingWiggle = spider.kissing ? Math.sin(timestamp / 60) / 15 : 0;
@@ -272,7 +271,7 @@ export function createWebCanvas(canvas: HTMLCanvasElement) {
 
         // abdomen
         const abdomenPos = getPointAt(center, scale * -6, spider.angle + kissingWiggle - walkingWiggle - standingWiggle);
-        drawCircle(abdomenPos, scale * 6, "black");
+        drawEllipse(abdomenPos, { x: scale * 6, y: scale * 4 }, spider.angle, "black");
         context.fill();
 
         // eyes

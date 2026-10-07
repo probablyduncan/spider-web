@@ -1,41 +1,57 @@
 import "./style.css";
 import { AnimationController, createWebCanvas } from 'shared/client';
-import { randomInRange, type SpiderState } from "shared";
+import { getPointAroundBox, getPointsAcrossBox, isAlmostZero, randomInRange, type SpiderState } from "shared";
+import { getSetting, onSettingChange } from "@/shared/settings";
 
 const canvas = document.createElement("canvas");
 canvas.id = "itsy-bitsy-canvas";
 document.body.appendChild(canvas);
 
-const { stepAndDrawSpider, clearCanvas, transformPointToCanvas, setPixelScale, getCanvasSize } = createWebCanvas(canvas);
+const { stepAndDrawSpider, clearCanvas, setPixelScale, getCanvasSize } = createWebCanvas(canvas);
 
-// window.addEventListener("scroll", (e) => {
-//     spiders should translate up/down the page?
-//     idk, maybe too much for now
-// });
+{
+    let prevScroll: number = window.scrollY;
+    window.addEventListener("scroll", () => {
+        const delta = window.scrollY - prevScroll * getCanvasSize().y / window.innerHeight;
+        prevScroll = window.scrollY;
+        spiders.forEach(s => {
+            s.targets[0].y += delta / 16;
+            s.current.y -= delta;
+        });
+    });
+}
+
+chrome.runtime.onMessage.addListener((message) => {
+    switch (message.type) {
+        case "add-spider":
+            spawnSpider();
+            break;
+        case "clear-spiders":
+            spiders.length = 0;
+            break;
+    }
+});
+
+window.addEventListener("mouseover", () => {
+    // use this to spawn spider when we get it out of its little cage
+})
 
 function spawnSpider() {
-    const i1 = Math.floor(Math.random() + 0.5);
-    const i2 = Math.floor(Math.random() + 0.5);
-    const points = [[1.5, -0.5], [Math.random(), Math.random()]];
+    const scale = getRandomSize();
+    const [current, target] = getPointsAcrossBox(getCanvasSize(), 100 * scale);
 
     const interpolation: SpiderState["interpolation"] = Math.random() > 0.5 ? {
         type: "ease",
-        halfLife: Math.random() * 400 + 100,
+        halfLife: randomInRange(100, 500),
     } : {
         type: "linear",
-        speed: Math.random() * 2 + 1,
+        speed: randomInRange(1, 5),
     }
 
     spiders.push({
         id: "new-spider-" + Math.random().toFixed(10),
-        current: transformPointToCanvas({
-            x: points[i1][i2],
-            y: points[1 - i1][i2],
-        }),
-        targets: [transformPointToCanvas({
-            x: points[i1][1 - i2],
-            y: points[1 - i1][1 - i2],
-        })],
+        current: current,
+        targets: [target],
         targetPadding: 0,
         interpolation,
         feet: [],
@@ -44,44 +60,132 @@ function spawnSpider() {
             x: 0,
             y: 0,
         },
-        scale: randomInRange(0.5, 1.5),
+        scale,
         kissing: true,
     });
+
+    animationController.playIfPaused();
+}
+
+function getRandomSize() {
+    const config = getSetting("size");
+    switch (config) {
+        case 0:
+            return randomInRange(0.4, 0.6);
+        case 1:
+            return randomInRange(0.75, 1.2);
+        case 2:
+            return randomInRange(1, 2);
+        case 3:
+            return randomInRange(2, 4);
+        default:
+            return 1;
+    }
+}
+
+let nextSpiderTimeoutId: number = 0;
+function queueSpider() {
+    const frequency = getSetting("frequency");
+    let timeout: number = 1000;
+    switch (frequency) {
+        case 0:
+            timeout = randomInRange(120_000, 1_200_000);
+            break;
+        case 1:
+            timeout = randomInRange(10_000, 240_000);
+            break;
+        case 2:
+            timeout = randomInRange(50, 2000);
+            break;
+        case 3:
+            timeout = randomInRange(1, 100);
+            break;
+    }
+    console.log("next spider in", timeout / 1000, "seconds");
+    nextSpiderTimeoutId = setTimeout(() => {
+        spawnSpider();
+        if (Math.random() > 0.9 || timeout < 100) {
+            // crazy! two!
+            spawnSpider();
+        }
+        queueSpider();
+    }, timeout);
 }
 
 const spiders: SpiderState[] = [];
-let nextSpiderTime = 2000;
+const animationController = new AnimationController(({ timestamp, delta }) => {
 
-new AnimationController(({ timestamp, delta }) => {
-
-    if (timestamp > nextSpiderTime) {
-        nextSpiderTime = timestamp + (Math.random() > 0.1 ? Math.random() * 1000 + 1000 : 100);
-        spawnSpider();
-    }
-
+    // draw
     clearCanvas();
     spiders.forEach(spider => stepAndDrawSpider(delta, timestamp, spider));
 
+    // remove spiders that are offscreen
     for (let i = spiders.length - 1; i > -1; i--) {
+        const deleteThreshold = 80 * spiders[i].scale;
         if (
-            spiders[i].targets[0].x < 0 && spiders[i].current.x < 0
-            || spiders[i].targets[0].y < 0 && spiders[i].current.y < 0
-            || spiders[i].targets[0].x > getCanvasSize().x && spiders[i].current.x > getCanvasSize().x
-            || spiders[i].targets[0].y > getCanvasSize().y && spiders[i].current.y > getCanvasSize().y
-
+            (spiders[i].targets[0].x < -deleteThreshold
+                && spiders[i].current.x < -deleteThreshold)
+            || (spiders[i].targets[0].y < -deleteThreshold
+                && spiders[i].current.y < -deleteThreshold)
+            || (spiders[i].targets[0].x > getCanvasSize().x + deleteThreshold
+                && spiders[i].current.x > getCanvasSize().x + deleteThreshold)
+            || (spiders[i].targets[0].y > getCanvasSize().y + deleteThreshold
+                && spiders[i].current.y > getCanvasSize().y + deleteThreshold)
         ) {
+            // delete spider if offscreen
             spiders.splice(i, 1);
+        }
+        else if (isAlmostZero({
+            x: spiders[i].targets[0].x - spiders[i].current.x,
+            y: spiders[i].targets[0].y - spiders[i].current.y,
+        }, 8)) {
+            // find another point if velocity is low
+            spiders[i].targets[0] = getPointAroundBox(getCanvasSize(), deleteThreshold * 2);
         }
     }
 
-    return true;
-}).playIfPaused();
-
-window.addEventListener("keydown", ({ key }) => {
-    if (key === "ArrowRight") {
-        setPixelScale(prev => prev * 2);
+    // only continue if there are spiders!
+    if (!spiders.length) {
+        console.log("no more spiders! stopping animation");
+        return false;
     }
-    else if (key === "ArrowLeft") {
-        setPixelScale(prev => prev / 2);
+
+    return true;
+});
+
+onSettingChange("resolution", (value) => {
+    switch (value) {
+        case 0:
+            setPixelScale(1);
+            break;
+        case 1:
+            setPixelScale(4);
+            break;
+        case 2:
+            setPixelScale(8);
+            break;
+        case 3:
+            setPixelScale(16);
+            break;
+    }
+});
+
+onSettingChange("enabled", (value) => {
+    if (value === 0) {
+        clearTimeout(nextSpiderTimeoutId);
+        nextSpiderTimeoutId = 0;
+        animationController.pause();
+        clearCanvas();
+    } else if (!nextSpiderTimeoutId) {
+        queueSpider();
+    }
+});
+
+onSettingChange("frequency", () => {
+    if (nextSpiderTimeoutId) {
+        clearTimeout(nextSpiderTimeoutId);
+    }
+    if (getSetting("enabled")) {
+        queueSpider();
     }
 });

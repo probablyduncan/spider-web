@@ -1,5 +1,5 @@
-import { defineManifest } from '@crxjs/vite-plugin'
-import pkg from './package.json' with { type: "json" }
+import { defineManifest } from "@crxjs/vite-plugin"
+import pkg from "./package.json" with { type: "json" }
 
 export default defineManifest({
     manifest_version: 3,
@@ -7,19 +7,26 @@ export default defineManifest({
     description: "there are a whole lot of spiders on the world wide web",
     version: pkg.version,
     icons: {
-        48: 'public/logo.png',
+        128: "public/icon128.png",
+        48: "public/icon48.png",
+        32: "public/icon32.png",
+        16: "public/icon16.png",
     },
     action: {
         default_icon: {
-            48: 'public/logo.png',
+            128: "public/icon128.png",
+            48: "public/icon48.png",
+            32: "public/icon32.png",
+            16: "public/icon16.png",
         },
-        default_popup: 'src/config/config.html',
+        default_popup: "src/config/config.html",
     },
     content_scripts: [{
-        js: ['src/content/main'],
-        matches: ['https://*/*'],
+        js: ["src/content/main"],
+        matches: ["https://*/*"],
     }],
     permissions: [
-        'storage',
+        "storage",
+        "activeTab",
     ],
 })

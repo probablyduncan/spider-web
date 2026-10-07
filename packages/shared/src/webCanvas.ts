@@ -252,8 +252,8 @@ export function createWebCanvas(canvas: HTMLCanvasElement) {
             }
         }
 
-        const standingWiggle = Math.sin(timestamp / 100) / 20;
-        const walkingWiggle = Math.min(velocity, 3) * Math.sin(timestamp / 50 + Math.random() * 0.1) / 20;
+        const standingWiggle = Math.sin(timestamp / 100 / Math.pow(scale, 2)) / 20;
+        const walkingWiggle = Math.min(velocity, 3) * Math.sin(timestamp / 50 + Math.random() * 0.1 / Math.pow(scale, 2)) / 20;
         const kissingWiggle = spider.kissing ? Math.sin(timestamp / 60) / 15 : 0;
 
         // ------------------- DRAW --------------------

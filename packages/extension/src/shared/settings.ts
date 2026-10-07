@@ -1,16 +1,15 @@
-const defaultSettings = {
-    frequency: 1,
-    size: 1,
+const defaultPreferences = {
+    mineEnabled: 0,
+    interloperFrequency: 2,
+    interloperSize: 1,
     resolution: 1,
-    enabled: 1,
-    scatter: 1,
 };
 
-export type ExtensionSettings = typeof defaultSettings;
+export type ExtensionSettings = typeof defaultPreferences;
 export type ExtensionSettingKey = keyof ExtensionSettings;
 export type OnExtensionSettingChange = (changes: Partial<Record<ExtensionSettingKey, { newValue: boolean, oldValue: boolean }>>) => void;
 
-const cache: ExtensionSettings = await chrome.storage.local.get(defaultSettings);
+const cache: ExtensionSettings = await chrome.storage.local.get(defaultPreferences);
 chrome.storage.local.onChanged.addListener((changes) => {
     Object.keys(changes).forEach((key) => {
         if (isSetting(key)) {
@@ -28,12 +27,12 @@ export function setSetting(key: ExtensionSettingKey, value: number) {
 }
 
 export function isSetting(key: string) {
-    return key in defaultSettings;
+    return key in defaultPreferences;
 }
 
 export function resetSetting(key: ExtensionSettingKey) {
-    setSetting(key, defaultSettings[key]);
-    return defaultSettings[key];
+    setSetting(key, defaultPreferences[key]);
+    return defaultPreferences[key];
 }
 
 export function onSettingChange(

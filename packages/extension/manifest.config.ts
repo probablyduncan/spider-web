@@ -3,8 +3,8 @@ import pkg from "./package.json" with { type: "json" }
 
 export default defineManifest({
     manifest_version: 3,
-    name: "spider-web",
-    description: "there are a whole lot of spiders on the world wide web",
+    name: "A Spider on the Web",
+    description: "There are a whole lot of spiders on the world wide web. Why don't you bring one along for the ride?",
     version: pkg.version,
     icons: {
         128: "public/icon128.png",

@@ -33,6 +33,13 @@
     font-weight: bold;
 }
 
+@font-face {
+    font-family: "Cairo";
+    src: url("/Cairo.ttf");
+    font-style: normal;
+    font-weight: normal;
+}
+
 :root {
     font-synthesis: none;
     text-rendering: optimizeLegibility;
@@ -51,90 +58,93 @@ body {
     color: white;
     background-color: black;
     font-family: "Pixel", "Times New Roman", Times, serif;
-}
-
-header {
-    font-family: "Gossip";
-    width: 100%;
+    min-width: 40ch;
     font-size: 1rem;
-    margin-bottom: 1rem;
-
+    display: flex;
+    flex-flow: column;
+    gap: 1em;
 }
 
-header h1 {
+.cairo {
+    font-family: "Cairo";
+    font-size: 1.5em;
+    line-height: 0;
+}
+
+h1 {
+    font-size: 1rem;
     text-align: center;
-    text-wrap: nowrap;
-    margin: 0 4ch;
+    font-weight: normal;
+}
+
+p {
+    text-align: center;
+}
+
+a {
+    color: var(--accent);
     font-weight: bold;
-}
+    text-decoration: none;
 
-header div {
-    text-align: justify;
-    text-align-last: justify;
-}
-
-form {
-    fieldset {
-
-        display: grid;
-        grid-template-columns: auto auto;
-        text-align: center;
-
-        &:focus-within {
-            border-color: var(--accent);
-        }
-
-        legend {
-            font-family: 'Gossip';
-            font-weight: 700;
-            font-size: 1.5rem;
-            text-align: center;
-        }
-
-        label {
-            font-size: 1rem;
-            display: inline;
-        }
-
-        label:has(input:checked) {
-            color: var(--accent);
-            font-weight: bold;
-
-            &::before {
-                content: "✔︎ ";
-            }
-        }
-
-        input {
-            appearance: none;
-            margin: 0;
-            padding: 0;
-            accent-color: var(--accent);
-
-            &::before {
-                content: " ";
-            }
-        }
+    &:hover {
+        text-decoration: underline;
     }
 }
 
-ul {
-    list-style: none;
-    padding: 0;
-    text-wrap: nowrap;
+div.break {
+    text-align: justify;
+    text-align-last: justify;
+    font-family: "Gossip";
 }
 
-label {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+fieldset {
+
+    border-style: outset;
+    /* display: grid;
+    grid-template-columns: 1fr; */
+
+    &:focus-within {
+        border-color: var(--accent);
+    }
+
+    legend {
+        font-family: 'Gossip';
+        font-weight: 700;
+        font-size: 1.5em;
+        text-align: center;
+    }
+
+    label:not(:first-child)::before {
+        content: "/ ";
+        text-wrap: nowrap;
+    }
+
+    /* label {
+        &::after {
+            content: "]";
+        }
+        &::before {
+            content: "[";
+        }
+    } */
+
+    label:has(input:checked) {
+        color: var(--accent);
+    }
+
+    input {
+        appearance: none;
+        margin: unset;
+        padding: unset;
+        accent-color: var(--accent);
+    }
 }
 
 .row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 1ch;
+    gap: 1em;
 }
 
 button {
@@ -142,13 +152,15 @@ button {
     font-family: unset;
     line-height: unset;
     padding: 0.25em 0.125em 0.125em;
-    display: inline;
     border-style: outset;
 
     &:hover {
-        border-style: inset;
-        font-weight: bold;
         cursor: pointer;
+    }
+
+    &:active {
+        font-weight: bold;
+        translate: 0 1px;
     }
 }
 
@@ -173,4 +185,45 @@ button {
         user-select: none;
         pointer-events: none;
     }
+}
+
+input[type="range"] {
+    -webkit-appearance: none;
+    /* Override default CSS styles */
+    appearance: none;
+    width: 100%;
+    /* Full-width */
+    height: 0.5lh;
+    /* Specified height */
+    background: #d3d3d3;
+    /* Grey background */
+    outline: none;
+    /* Remove outline */
+    opacity: 0.7;
+    /* Set transparency (for mouse-over effects on hover) */
+    -webkit-transition: .2s;
+    /* 0.2 seconds transition on hover */
+    transition: opacity .2s;
+}
+
+input[type="range"]::-webkit-slider-thumb,
+input[type="range"]::-moz-range-thumb {
+    &::after {
+        position: absolute;
+        inset: 0;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        content: "c";
+        font-family: "Cairo";
+    }
+
+    -webkit-appearance: none;
+    /* Override default look */
+    appearance: none;
+    width: 1ch;
+    aspect-ratio: 1;
+    cursor: pointer;
+    /* Cursor on hover */
 }

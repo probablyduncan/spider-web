@@ -7,84 +7,58 @@
 </head>
 
 <body>
-    <header>
-        <div>—|— — —|—</div>
-        <h1>A Spider’s Website</h1>
-        <div>—|— — —|—</div>
-    </header>
-    <main>
-        <form>
-            <fieldset>
-                <legend>Enabled</legend>
-                <label>Yes!<input type="radio" name="enabled" value="1" /></label>
-                <label>No<input type="radio" name="enabled" value="0" /></label>
-            </fieldset>
-            <fieldset>
-                <legend>Interloper Frequency</legend>
-                <label>Generational<input type="radio" name="frequency" value="0" /></label>
-                <label>Occasional<input type="radio" name="frequency" value="1" /></label>
-                <label>Crowded<input type="radio" name="frequency" value="2" /></label>
-                <label>Infestation<input type="radio" name="frequency" value="3" /></label>
-            </fieldset>
-            <fieldset>
-                <legend>Interloper Size</legend>
-                <label>Pinhead<input type="radio" name="size" value="0" /></label>
-                <label>Fingernail<input type="radio" name="size" value="1" /></label>
-                <label>Silver Dollar<input type="radio" name="size" value="2" /></label>
-                <label>Dinner Plate<input type="radio" name="size" value="3" /></label>
-            </fieldset>
-            <fieldset>
-                <legend>Pixelation</legend>
-                <label>Crisp<input type="radio" name="resolution" value="0" /></label>
-                <label>Soggy<input type="radio" name="resolution" value="1" /></label>
-                <label>Retro<input type="radio" name="resolution" value="2" /></label>
-                <label>Missing Spectacles<input type="radio" name="resolution" value="3" /></label>
-            </fieldset>
-            <fieldset>
-                <legend>Afraid of You?</legend>
-                <label>Very afraid<input type="radio" name="scatter" value="2" /></label>
-                <label>Sometimes<input type="radio" name="scatter" value="1" /></label>
-                <label>No cowardly spiders<input type="radio" name="scatter" value="0" /></label>
-            </fieldset>
-            <br />
-            <br />
-            <div class="row">
-                <button id="add-spider" type="button">SUMMON</button>
-                <button id="clear-spiders" type="button">CLEAR</button>
-                <button id="reset" type="button">RESET</button>
-            </div>
-        </form>
-
-        <br />
-        <br />
-        <br />
-        <br />
-        <br />
-
-        <div>
-            your own personal web crawler
-        </div>
-
-
-        <div data-spider-slider>
-            <input type="range" min="0" max="1">
-            <canvas></canvas>
-        </div>
-        <br /><br />
-        <button id="add-spider">add spider</button>
-        <ul>
-            <li>
-                <label>Worldwide: <input name="worldwide" type="checkbox" /></label>
-            </li>
-            <li>
-                <label>Infestation: <input name="infestation" type="checkbox" /></label>
-            </li>
-            <li>
-                <label>Show Messages: <input name="showMessages" type="checkbox" /></label>
-            </li>
-        </ul>
-        <button type="reset">reset defaults</button>
-    </main>
+    <div>
+        <div class="break">—|— — —|—</div>
+        <h1>
+            <span class="cairo">d</span> <b>spiders come</b> at <b>last</b> to
+            <br/>
+            <b data-hostname>this website</b>
+        </h1>
+        <div class="break">—|— — —|—</div>
+    </div>
+    <div class="row">
+        <button id="add-spider" type="button">SUMMON SPIDER</button>
+        <button id="toggle-yours" type="button">TOGGLE YOURS</button>
+    </div>
+    <fieldset>
+        <legend>frequency</legend>
+        <label>Never (disable)<input type="radio" name="interloperFrequency" value="0" /></label>
+        <label>Generational<input type="radio" name="interloperFrequency" value="1" /></label>
+        <label>Occasional<input type="radio" name="interloperFrequency" value="2" /></label>
+        <label>Pretty Often<input type="radio" name="interloperFrequency" value="3" /></label>
+        <label>Infestation<input type="radio" name="interloperFrequency" value="4" /></label>
+    </fieldset>
+    <fieldset>
+        <legend>spider size</legend>
+        <label>Pinhead<input type="radio" name="interloperSize" value="0" /></label>
+        <label>Fingernail<input type="radio" name="interloperSize" value="1" /></label>
+        <label>Silver Dollar<input type="radio" name="interloperSize" value="2" /></label>
+        <label>Dinner Plate<input type="radio" name="interloperSize" value="3" /></label>
+    </fieldset>
+    <fieldset>
+        <legend>pixelation</legend>
+        <label>Crisp<input type="radio" name="resolution" value="0" /></label>
+        <label>Soggy<input type="radio" name="resolution" value="1" /></label>
+        <label>Retro<input type="radio" name="resolution" value="2" /></label>
+        <label>Yes<input type="radio" name="resolution" value="3" /></label>
+    </fieldset>
+    <div class="row" style="margin-top: 0.5em;">
+        <button id="clear-spiders" type="button">CLEAR SCREEN</button>
+        <button id="reset" type="button">RESET DEFAULTS</button>
+    </div>
+    <div>
+        <div class="break">—|— — —|—</div>
+        <p>
+            <span class="cairo">d</span> Web crawlers for everyone!
+        </p>
+        <p>
+            Tell your friends to meet you at <a href="https://spiders.duncanpetrie.com" target="_blank" title="the world wide web!">spiders.duncanpetrie.com</a>.
+        </p>
+        <p>
+            This panel was typeset in <a href="https://gossip.cargo.site/" target="_blank" title="https://gossip.cargo.site/">Gossip</a>, <a target="_blank" href="https://int10h.org/oldschool-pc-fonts/fontlist/font?ibm_vga_8x16#-" title="https://int10h.org/oldschool-pc-fonts/fontlist/font?ibm_vga_8x16#-">IBM VGA 8x16</a> and <a target="_blank" href="https://int10h.org/oldschool-pc-fonts/fontlist/font?cordata_ppc-400" title="https://int10h.org/oldschool-pc-fonts/fontlist/font?cordata_ppc-400">Cordata PPC 400</a>.
+        </p>
+        <div class="break">—|— — —|—</div>
+    </div>
 </body>
 
 </html>

@@ -322,7 +322,7 @@ window.addEventListener("keydown", ({ key }) => {
     else if (key === "i") {
         document.querySelector<HTMLDialogElement>("dialog#info")?.showModal();
     }
-    else if (key === "r" || prevKey == "q") {
+    else if (key === "r" && prevKey == "q") {
         document.querySelector<HTMLElement>("#qr")?.classList.toggle("hidden");
     }
     else if (key === "Escape") {

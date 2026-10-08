@@ -29,12 +29,38 @@ const updateCursor = (() => {
 })();
 
 const updateNumConnectionsDisplay = (() => {
-    let numConnections = 0;
     const multilineTextElements = document.querySelectorAll(`[data-others-long]`);
     const shortTextElements = document.querySelectorAll(`[data-others-short]`);
     const numberElements = document.querySelectorAll(`[data-others-num]`);
-    return (change: number = 0) => {
-        numConnections += Math.max(change, -numConnections);
+    return () => {
+        console.log(spiders);
+
+        let numConnections = 0;
+        for (const spider of spiders.values()) {
+
+            // don't count local
+            if (spider.id === "" || spider.id === "me") {
+                continue;
+            }
+
+            // don't count offscreen
+            const deleteThreshold = 80 * spider.scale;
+            if (
+                (spider.targets[0].x < -deleteThreshold
+                    && spider.current.x < -deleteThreshold)
+                || (spider.targets[0].y < -deleteThreshold
+                    && spider.current.y < -deleteThreshold)
+                || (spider.targets[0].x > getCanvasSize().x + deleteThreshold
+                    && spider.current.x > getCanvasSize().x + deleteThreshold)
+                || (spider.targets[0].y > getCanvasSize().y + deleteThreshold
+                    && spider.current.y > getCanvasSize().y + deleteThreshold)
+            ) {
+                continue;
+            }
+
+            numConnections++;
+        }
+        
         const englishNumber = numberToEnglish(numConnections);
         let countHtml;
         let belowHtml;
@@ -53,7 +79,7 @@ const updateNumConnectionsDisplay = (() => {
                 break;
 
         }
-        
+
         multilineTextElements.forEach(e => e.innerHTML = countHtml + "<br/>" + belowHtml);
         shortTextElements.forEach(e => e.innerHTML = countHtml);
         numberElements.forEach(e => e.innerHTML = englishNumber);
@@ -210,14 +236,14 @@ sock.listen("init", (e) => {
             targets: c.points.map(p => transformPointToCanvas(p)),
         }));
     });
-    updateNumConnectionsDisplay(e.connections.length);
+    updateNumConnectionsDisplay();
 });
 
 sock.listen("join", (e) => {
     spiders.set(e.id, createSpiderState({
         id: e.id,
     }));
-    updateNumConnectionsDisplay(1);
+    updateNumConnectionsDisplay();
 });
 
 sock.listen("move", (e) => {
@@ -230,7 +256,7 @@ sock.listen("move", (e) => {
 
 sock.listen("leave", (e) => {
     spiders.delete(e.id);
-    updateNumConnectionsDisplay(-1);
+    updateNumConnectionsDisplay();
 });
 
 // sock.listen("message", (e) => {
@@ -356,6 +382,6 @@ window.addEventListener("keydown", ({ key }) => {
             spiders.get(id).interpolation.speed = 0;
         }, 5000);
     }
-    
+
     prevKey = key;
 });

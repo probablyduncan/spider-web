@@ -142,7 +142,7 @@ button[commandfor="info"][command="show-modal"] {
     }
 }
 
-dialog {
+dialog#info {
     cursor: unset;
     z-index: 50;
     /* border: unset;
@@ -244,6 +244,18 @@ a {
     content: "8";
     font-family: "Cairo";
     line-height: 0;
+}
+
+#qr {
+    position: fixed;
+    translate: -50% -50%;
+    top: 50%;
+    left: 50%;
+    aspect-ratio: 1;
+    width: 90vmin;
+    &.hidden {
+        display: none;
+    }
 }
 
 canvas#itsy-bitsy-canvas {

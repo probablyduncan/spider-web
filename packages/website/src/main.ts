@@ -311,6 +311,7 @@ function createSpiderState(state: Partial<SpiderState> & Pick<SpiderState, "id">
     return Object.assign(defaultState, state);
 }
 
+let prevKey = "";
 window.addEventListener("keydown", ({ key }) => {
     if (key === "ArrowRight") {
         setPixelScale(prev => prev * 2);
@@ -320,6 +321,12 @@ window.addEventListener("keydown", ({ key }) => {
     }
     else if (key === "i") {
         document.querySelector<HTMLDialogElement>("dialog#info")?.showModal();
+    }
+    else if (key === "r" || prevKey == "q") {
+        document.querySelector<HTMLElement>("#qr")?.classList.toggle("hidden");
+    }
+    else if (key === "Escape") {
+        document.querySelector<HTMLElement>("#qr")?.classList.add("hidden");
     }
     else if (key === "1") {
         const points = getPointsAcrossBox(getCanvasSize(), 100);
@@ -352,4 +359,6 @@ window.addEventListener("keydown", ({ key }) => {
             spiders.get(id).interpolation.speed = 0;
         }, 5000);
     }
+    
+    prevKey = key;
 });

@@ -155,6 +155,12 @@ dialog#info {
     aspect-ratio: 6/7;
     overflow-y: scroll;
 
+    @media (max-width: 60ch) {
+        width: 100vw;
+        aspect-ratio: unset;
+        height: 100svh;
+    }
+
     header {
         text-align: center;
 

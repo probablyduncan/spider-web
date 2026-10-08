@@ -11,9 +11,6 @@ const { stepAndDrawSpider, stepAndDrawHeart, clearCanvas, setPixelScale, transfo
 const WSS = import.meta.env.VITE_WS_HOST as string;
 const sock = createWebSocket(WSS);
 
-// NOT NEEDED YET
-// sock.send("init", { });
-
 const spiders: Map<string, SpiderState> = new Map();
 
 const me: SpiderState = createSpiderState({

@@ -1,10 +1,9 @@
 import './style.css'
-import { angleDifference, getPointAroundBox, getPointsAcrossBox, isAlmostZero, midpoint, randomInRange } from 'shared/math';
+import { angleDifference, getPointAroundBox, getPointsAcrossBox, isAlmostZero, midpoint, numberToEnglish, randomInRange } from 'shared/math';
 import type { HeartState, SpiderState } from 'shared/types';
 import { createWebSocket } from "shared/webSocket"
 import { createWebCanvas } from "shared/webCanvas"
 import { AnimationController } from 'shared/animationController';
-
 
 const canvas = document.getElementById("itsy-bitsy-canvas") as HTMLCanvasElement;
 const { stepAndDrawSpider, stepAndDrawHeart, clearCanvas, setPixelScale, transformPointToCanvas, getCanvasSize } = createWebCanvas(canvas);
@@ -29,6 +28,38 @@ const updateCursor = (() => {
         }
         cursorHidden = (state === "hide");
         document.body.classList.toggle("no-cursor", cursorHidden);
+    }
+})();
+
+const updateNumConnectionsDisplay = (() => {
+    let numConnections = 0;
+    const multilineTextElements = document.querySelectorAll(`[data-others-long]`);
+    const shortTextElements = document.querySelectorAll(`[data-others-short]`);
+    const numberElements = document.querySelectorAll(`[data-others-num]`);
+    return (change: number = 0) => {
+        numConnections += Math.max(change, -numConnections);
+        const englishNumber = numberToEnglish(numConnections);
+        let countHtml;
+        let belowHtml;
+        switch (numConnections) {
+            case 0:
+                countHtml = `There are <b>no other spiders here</b>.`;
+                belowHtml = `You are <b>alone</b>.`;
+                break;
+            case 1:
+                countHtml = `There is <b>1 other spider here</b>.`;
+                belowHtml = `Say hello!`;
+                break;
+            default:
+                countHtml = `There are <b>${numberToEnglish(numConnections)}</b> other spiders here.`;
+                belowHtml = `Say hello!`;
+                break;
+
+        }
+        
+        multilineTextElements.forEach(e => e.innerHTML = countHtml + "<br/>" + belowHtml);
+        shortTextElements.forEach(e => e.innerHTML = countHtml);
+        numberElements.forEach(e => e.innerHTML = englishNumber);
     }
 })();
 
@@ -144,7 +175,7 @@ new AnimationController(({ delta, timestamp }) => {
 
                         const babyKey = "baby-" + Math.random().toFixed(10);
                         spiders.set(babyKey, createSpiderState({
-                            id: babyKey,
+                            id: "",
                             current: { ...Math.random() > 0.5 ? kisser.current : kissee.current },
                             targets: [getPointAroundBox(getCanvasSize(), 200)],
                             interpolation: {
@@ -182,12 +213,14 @@ sock.listen("init", (e) => {
             targets: c.points.map(p => transformPointToCanvas(p)),
         }));
     });
+    updateNumConnectionsDisplay(e.connections.length);
 });
 
 sock.listen("join", (e) => {
     spiders.set(e.id, createSpiderState({
         id: e.id,
     }));
+    updateNumConnectionsDisplay(1);
 });
 
 sock.listen("move", (e) => {
@@ -200,6 +233,7 @@ sock.listen("move", (e) => {
 
 sock.listen("leave", (e) => {
     spiders.delete(e.id);
+    updateNumConnectionsDisplay(-1);
 });
 
 // sock.listen("message", (e) => {
@@ -211,17 +245,21 @@ document.addEventListener('mousemove', (e) => {
 });
 
 document.addEventListener("mousedown", (e) => {
-    me.scale /= 1.2;
-    if (me.interpolation.type === "ease") {
-        me.interpolation.halfLife *= 10;
-    }
+    me.scale = 0.8;
+    //@ts-ignore
+    me.interpolation.halfLife = 5000;
 });
 
 document.addEventListener("mouseup", () => {
-    me.scale *= 1.2;
-    if (me.interpolation.type === "ease") {
-        me.interpolation.halfLife /= 10;
-    }
+    me.scale = 1;
+    //@ts-ignore
+    me.interpolation.halfLife = 100;
+});
+
+document.addEventListener("mouseleave", () => {
+    me.scale = 1;
+    //@ts-ignore
+    me.interpolation.halfLife = 100;
 });
 
 document.addEventListener("touchmove", (e) => {
@@ -280,11 +318,14 @@ window.addEventListener("keydown", ({ key }) => {
     else if (key === "ArrowLeft") {
         setPixelScale(prev => prev / 2);
     }
+    else if (key === "i") {
+        document.querySelector<HTMLDialogElement>("dialog#info")?.showModal();
+    }
     else if (key === "1") {
         const points = getPointsAcrossBox(getCanvasSize(), 100);
         const id = "ease-" + Math.random().toFixed(10);
         spiders.set(id, createSpiderState({
-            id,
+            id: "",
             current: points[0],
             targets: [points[1]],
             scale: randomInRange(0.5, 1.5),
@@ -297,7 +338,7 @@ window.addEventListener("keydown", ({ key }) => {
         const points = getPointsAcrossBox(getCanvasSize(), 40);
         const id = "linear-" + Math.random().toFixed(10);
         spiders.set(id, createSpiderState({
-            id,
+            id: "",
             current: points[0],
             targets: [points[1]],
             interpolation: {

@@ -1,3 +1,45 @@
+@font-face {
+    font-family: "Gossip";
+    src: url("/Gossip-MedCrossStitch.woff2");
+    font-style: normal;
+    font-weight: 400;
+}
+
+@font-face {
+    font-family: "Gossip";
+    src: url("/Gossip-MedSquare.woff2");
+    font-style: normal;
+    font-weight: 500;
+}
+
+@font-face {
+    font-family: "Gossip";
+    src: url("/Gossip-MedPixel.woff2");
+    font-style: normal;
+    font-weight: 700;
+}
+
+@font-face {
+    font-family: "Pixel";
+    src: url("/Cordata_PPC-400.woff");
+    font-style: normal;
+    font-weight: normal;
+}
+
+@font-face {
+    font-family: "Pixel";
+    src: url("/IBM_VGA_8x16.woff");
+    font-style: normal;
+    font-weight: bold;
+}
+
+@font-face {
+    font-family: "Cairo";
+    src: url("/Cairo.ttf");
+    font-style: normal;
+    font-weight: normal;
+}
+
 :root,
 * {
     font-synthesis: none;
@@ -5,23 +47,203 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 
-    font-family: 'Times New Roman', Times, serif;
     font-size: unset;
 
     overscroll-behavior: none;
     box-sizing: border-box;
     touch-action: none;
+
+    --pix: "Pixel", "Times New Roman", Times, serif;
+    --gos: "Gossip", "Times New Roman", Times, serif;
+    --accent: #ff9b21;
 }
 
 body {
-    margin: 0;
+    margin: unset;
     overflow: clip;
     width: 100vw;
     height: 100svh;
+    font-family: var(--pix);
+}
+
+.gossip {
+    font-family: var(--gos);
 }
 
 body.no-cursor {
     cursor: none;
+}
+
+body>header {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    right: 1rem;
+}
+
+.top-left,
+.top-right,
+.bottom-left,
+.bottom-right {
+    position: fixed;
+    --vertical-spacing: 0.5rem;
+    --horizontal-spacing: 1rem;
+    z-index: 50;
+}
+
+.top-left,
+.top-right {
+    top: var(--vertical-spacing);
+}
+
+.bottom-left,
+.bottom-right {
+    bottom: var(--vertical-spacing);
+}
+
+.top-left,
+.bottom-left {
+    left: var(--horizontal-spacing);
+}
+
+.top-right,
+.bottom-right {
+    right: var(--horizontal-spacing);
+}
+
+button {
+    font-family: unset;
+    font-size: unset;
+    line-height: unset;
+    border: unset;
+    padding: unset;
+    background: unset;
+}
+
+.top-left {
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+button[commandfor="info"][command="show-modal"] {
+
+    font-size: 1.2em;
+    cursor: pointer;
+    font-weight: bold;
+    background-color: white;
+    border-radius: 4px;
+
+    &:hover {
+        &::before {
+            content: "p ";
+            font-family: "Cairo";
+            line-height: 0;
+        }
+    }
+}
+
+dialog {
+    cursor: unset;
+    z-index: 50;
+    /* border: unset;
+    margin: unset; */
+    color: white;
+    background-color: black;
+    border: 4px outset white;
+    width: min(90vw, 60ch);
+    margin: auto;
+    aspect-ratio: 6/7;
+    overflow-y: scroll;
+
+    header {
+        text-align: center;
+
+        h1,
+        p {
+            margin: unset;
+        }
+
+        h1 {
+            font-size: 3em;
+            text-align: center;
+            font-family: var(--gos);
+            font-weight: normal;
+            margin: unset;
+
+            b {
+                font-weight: bold;
+                opacity: 0.75;
+            }
+        }
+    }
+
+    section {
+        width: 35ch;
+        margin: 0 auto;
+
+        p:first-child {
+            text-indent: 5ch;
+        }
+    }
+
+    footer {
+        text-align: center;
+        margin: 1em 0;
+    }
+
+    button {
+        background-color: white;
+        padding: 0.25em 0.125em 0.125em;
+        border-style: outset;
+
+        &:hover {
+            cursor: pointer;
+        }
+
+        &:active {
+            font-weight: bold;
+            translate: 0 1px;
+        }
+    }
+
+}
+
+div.break {
+    font-size: 2rem;
+    font-family: var(--gos);
+    font-weight: normal;
+    text-align: justify;
+    text-align-last: justify;
+    user-select: none;
+}
+
+a {
+    color: var(--accent, currentColor);
+    text-decoration: none;
+    font-weight: bold;
+
+    &:hover,
+    &:focus-visible {
+        text-decoration: underline;
+    }
+}
+
+.cairo {
+    font-family: "Cairo";
+}
+
+.spider-before::before {
+    content: "d";
+    margin-right: 0.5ch;
+    font-family: "Cairo";
+    font-size: 2em;
+    line-height: 0;
+}
+
+.heart-after::after {
+    content: "8";
+    font-family: "Cairo";
+    line-height: 0;
 }
 
 canvas#itsy-bitsy-canvas {
@@ -29,7 +251,7 @@ canvas#itsy-bitsy-canvas {
     inset: 0;
     width: 100vw;
     height: 100svh;
-    z-index: 1000000;
+    z-index: 20;
 
     pointer-events: none;
     touch-action: none;
@@ -37,6 +259,6 @@ canvas#itsy-bitsy-canvas {
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
-    
+
     image-rendering: pixelated;
 }

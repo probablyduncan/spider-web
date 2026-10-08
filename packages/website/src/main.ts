@@ -33,7 +33,6 @@ const updateNumConnectionsDisplay = (() => {
     const shortTextElements = document.querySelectorAll(`[data-others-short]`);
     const numberElements = document.querySelectorAll(`[data-others-num]`);
     return () => {
-        console.log(spiders);
 
         let numConnections = 0;
         for (const spider of spiders.values()) {
@@ -49,23 +48,22 @@ const updateNumConnectionsDisplay = (() => {
             }
 
             // don't count offscreen
-            // const deleteThreshold = 80 * spider.scale;
-            // if (
-            //     (spider.targets[0].x < -deleteThreshold
-            //         && spider.current.x < -deleteThreshold)
-            //     || (spider.targets[0].y < -deleteThreshold
-            //         && spider.current.y < -deleteThreshold)
-            //     || (spider.targets[0].x > getCanvasSize().x + deleteThreshold
-            //         && spider.current.x > getCanvasSize().x + deleteThreshold)
-            //     || (spider.targets[0].y > getCanvasSize().y + deleteThreshold
-            //         && spider.current.y > getCanvasSize().y + deleteThreshold)
-            // ) {
-            //     continue;
-            // }
+            if (
+                (spider.targets[0].x <= 0
+                    && spider.current.x <= 0)
+                || (spider.targets[0].y <= 0
+                    && spider.current.y <= 0)
+                || (spider.targets[0].x >= getCanvasSize().x
+                    && spider.current.x >= getCanvasSize().x)
+                || (spider.targets[0].y >= getCanvasSize().y
+                    && spider.current.y >= getCanvasSize().y)
+            ) {
+                continue;
+            }
 
             numConnections++;
         }
-        
+
         const englishNumber = numberToEnglish(numConnections);
         let countHtml;
         let belowHtml;

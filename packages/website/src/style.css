@@ -51,7 +51,6 @@
 
     overscroll-behavior: none;
     box-sizing: border-box;
-    touch-action: none;
 
     --pix: "Pixel", "Times New Roman", Times, serif;
     --gos: "Gossip", "Times New Roman", Times, serif;

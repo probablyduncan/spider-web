@@ -24,6 +24,10 @@ export default defineManifest({
     content_scripts: [{
         js: ["src/content/main"],
         matches: ["https://*/*"],
+        exclude_matches: [
+            "https://spiders.duncanpetrie.com/",
+            "https://spider.duncanpetrie.com/",
+        ],
     }],
     permissions: [
         "storage",

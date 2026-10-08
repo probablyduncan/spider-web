@@ -13,3 +13,5 @@
 - add live chat with other spiders on the website
 - see spiders on the website from people browsing the web using the extension
 - when someone visits the website, this should trigger a spider to run across the screen in the extension
+- better spider idle states - your spider should wander around when you don't move your mouse, and interlopers should have more organic movement. Some of them should wander, pause, etc
+- interact with interlopers? similar to kissing? brush them aside, scare them away, etc

@@ -43,20 +43,25 @@ const updateNumConnectionsDisplay = (() => {
                 continue;
             }
 
-            // don't count offscreen
-            const deleteThreshold = 80 * spider.scale;
-            if (
-                (spider.targets[0].x < -deleteThreshold
-                    && spider.current.x < -deleteThreshold)
-                || (spider.targets[0].y < -deleteThreshold
-                    && spider.current.y < -deleteThreshold)
-                || (spider.targets[0].x > getCanvasSize().x + deleteThreshold
-                    && spider.current.x > getCanvasSize().x + deleteThreshold)
-                || (spider.targets[0].y > getCanvasSize().y + deleteThreshold
-                    && spider.current.y > getCanvasSize().y + deleteThreshold)
-            ) {
+            // don't count before first interaction
+            if (!spider.targets.length) {
                 continue;
             }
+
+            // don't count offscreen
+            // const deleteThreshold = 80 * spider.scale;
+            // if (
+            //     (spider.targets[0].x < -deleteThreshold
+            //         && spider.current.x < -deleteThreshold)
+            //     || (spider.targets[0].y < -deleteThreshold
+            //         && spider.current.y < -deleteThreshold)
+            //     || (spider.targets[0].x > getCanvasSize().x + deleteThreshold
+            //         && spider.current.x > getCanvasSize().x + deleteThreshold)
+            //     || (spider.targets[0].y > getCanvasSize().y + deleteThreshold
+            //         && spider.current.y > getCanvasSize().y + deleteThreshold)
+            // ) {
+            //     continue;
+            // }
 
             numConnections++;
         }

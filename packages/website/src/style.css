@@ -73,41 +73,31 @@ body.no-cursor {
     cursor: none;
 }
 
-body>header {
+header, footer {
     position: fixed;
-    top: 1rem;
-    left: 1rem;
-    right: 1rem;
+    display: flex;
+    flex-flow: wrap;
+    justify-content: space-between;
+    padding: 0.5rem 1rem;
+    line-height: 1.4em;
+
+    & > * {
+        z-index: 50;
+    }
+
+    /* @media (max-width: 500px) {
+        & > * {
+            width: 100%;
+        }
+    } */
 }
 
-.top-left,
-.top-right,
-.bottom-left,
-.bottom-right {
-    position: fixed;
-    --vertical-spacing: 0.5rem;
-    --horizontal-spacing: 1rem;
-    z-index: 50;
+header {
+    top: 0; left: 0; right: 0;
 }
 
-.top-left,
-.top-right {
-    top: var(--vertical-spacing);
-}
-
-.bottom-left,
-.bottom-right {
-    bottom: var(--vertical-spacing);
-}
-
-.top-left,
-.bottom-left {
-    left: var(--horizontal-spacing);
-}
-
-.top-right,
-.bottom-right {
-    right: var(--horizontal-spacing);
+footer {
+    bottom: 0; left: 0; right: 0;
 }
 
 button {

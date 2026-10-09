@@ -63,6 +63,7 @@ body {
     width: 100vw;
     height: 100svh;
     font-family: var(--pix);
+    font-size: min(1em, 4vw);
 }
 
 .gossip {
@@ -84,12 +85,6 @@ header, footer {
     & > * {
         z-index: 50;
     }
-
-    /* @media (max-width: 500px) {
-        & > * {
-            width: 100%;
-        }
-    } */
 }
 
 header {
@@ -134,8 +129,6 @@ button[commandfor="info"][command="show-modal"] {
 dialog#info {
     cursor: unset;
     z-index: 50;
-    /* border: unset;
-    margin: unset; */
     color: white;
     background-color: black;
     border: 4px outset white;
@@ -150,7 +143,7 @@ dialog#info {
         height: 100svh;
     }
 
-    header {
+    section:first-of-type {
         text-align: center;
 
         h1,
@@ -159,7 +152,8 @@ dialog#info {
         }
 
         h1 {
-            font-size: 3em;
+            font-size: min(3em, 11vw);
+
             text-align: center;
             font-family: var(--gos);
             font-weight: normal;
@@ -172,8 +166,8 @@ dialog#info {
         }
     }
 
-    section {
-        width: 35ch;
+    section:not(:first-of-type, :last-of-type) {
+        width: min(35ch, 100%);
         margin: 0 auto;
 
         p:first-child {
@@ -181,7 +175,7 @@ dialog#info {
         }
     }
 
-    footer {
+    section:last-of-type {
         text-align: center;
         margin: 1em 0;
     }
